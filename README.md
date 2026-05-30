@@ -63,31 +63,31 @@ flowchart TD
 
 ## 1. Công nghệ đề xuất cho Frontend (Các lựa chọn)
 
-### Lựa chọn A: PWA Web-App (React + Vite / Next.js)
+### Lựa chọn A: [PWA Web-App](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps) ([React](https://react.dev/) + [Vite](https://vitejs.dev/) / [Next.js](https://nextjs.org/))
 *   **Mô tả:** Tập trung xây dựng một trang web thuần túy nhưng có giao diện và tương tác giống hệt App điện thoại.
 *   **Ưu điểm:** Nhanh, dễ làm. Chỉ cần code 1 lần là chạy được trên trình duyệt của máy tính lẫn điện thoại. Giao diện CSS hiện đại.
 *   **Nhược điểm:** Cảm giác mượt mà không thể bằng 100% Native App.
 
-### Lựa chọn B: Kotlin Multiplatform (KMP) / Compose Multiplatform
+### Lựa chọn B: [Kotlin Multiplatform (KMP)](https://kotlinlang.org/docs/multiplatform.html) / [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/)
 *   **Mô tả:** Sử dụng ngôn ngữ **Kotlin** để viết logic, và dùng **Compose** làm giao diện chung cho Android, iOS và Web.
 *   **Ưu điểm:** Hiệu năng Native (cực kỳ mượt) khi build ra điện thoại.
 *   **Nhược điểm:** Phần xuất ra Web (Compose for Web) hiện vẫn chưa quá trưởng thành. Phù hợp nếu ưu tiên Mobile App trước.
 
-### Lựa chọn C: Flutter (Dart) hoặc React Native
+### Lựa chọn C: [Flutter](https://flutter.dev/) (Dart) hoặc [React Native](https://reactnative.dev/)
 *   **Mô tả:** Các công cụ làm Cross-platform phổ biến (chạy Web, iOS, Android).
 
-## 2. Giao tiếp Mạng & Công nghệ Backend (Supabase)
+## 2. Giao tiếp Mạng & Công nghệ Backend ([Supabase](https://supabase.com/docs))
 
-Chúng ta sẽ ưu tiên sử dụng **Supabase (Database Online)** làm Backend-as-a-Service vì phí rẻ/miễn phí và dễ kết nối từ xa.
+Chúng ta sẽ ưu tiên sử dụng **[Supabase](https://supabase.com/docs) (Database Online)** làm Backend-as-a-Service vì phí rẻ/miễn phí và dễ kết nối từ xa.
 
 ### A. Giao tiếp Mạng (Network Layer)
-*   **REST API:** Dùng để thực hiện các tác vụ cơ bản, bất đồng bộ (Tạo Bill, Lấy dữ liệu lịch sử, Tìm kiếm User).
-*   **WebSockets (Realtime):** Duy trì kết nối liên tục giúp ứng dụng nhận tin nhắn Chat và cập nhật số nợ/tổng hóa đơn ngay lập tức (instant) mà không cần phải F5/tải lại trang.
+*   **[REST API](https://developer.mozilla.org/en-US/docs/Glossary/REST):** Dùng để thực hiện các tác vụ cơ bản, bất đồng bộ (Tạo Bill, Lấy dữ liệu lịch sử, Tìm kiếm User).
+*   **[WebSockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) (Realtime):** Duy trì kết nối liên tục giúp ứng dụng nhận tin nhắn Chat và cập nhật số nợ/tổng hóa đơn ngay lập tức (instant) mà không cần phải F5/tải lại trang.
 
 ### B. Cơ chế Xác thực & Phân quyền (Authentication & Authorization)
-*   **Stateless Auth & JWT:** Khi đăng nhập, Backend cấp một JSON Web Token (JWT).
-*   **Bearer Token:** Frontend sẽ lưu JWT này và đính kèm vào Request Header (`Authorization: Bearer <token>`) trong mọi API call tiếp theo.
-*   **Row Level Security (RLS):** Database giải mã JWT payload để định danh User (sub). Dựa vào đó, RLS dưới database sẽ tự động chặn/cho phép quyền đọc/ghi dữ liệu (vd: Không ai đọc được tin nhắn hoặc sửa Bill của bạn ngoại trừ bạn và người trong nhóm).
+*   **Stateless Auth & [JWT](https://jwt.io/introduction):** Khi đăng nhập, Backend cấp một [JSON Web Token (JWT)](https://jwt.io/introduction).
+*   **[Bearer Token](https://swagger.io/docs/specification/authentication/bearer-authentication/):** Frontend sẽ lưu JWT này và đính kèm vào Request Header (`Authorization: Bearer <token>`) trong mọi API call tiếp theo.
+*   **[Row Level Security (RLS)](https://supabase.com/docs/guides/auth/row-level-security):** Database giải mã JWT payload để định danh User (sub). Dựa vào đó, RLS dưới database sẽ tự động chặn/cho phép quyền đọc/ghi dữ liệu (vd: Không ai đọc được tin nhắn hoặc sửa Bill của bạn ngoại trừ bạn và người trong nhóm).
 
 ---
 
@@ -129,8 +129,3 @@ Bảng quan trọng nhất để tính ai nợ ai:
 ### D. Logic Kết Bạn & Tạo Nhóm
 *   **Kết bạn:** Người dùng gõ `@username` vào thanh tìm kiếm. Frontend sẽ gửi lệnh qua REST API lên Database Online để query chính xác User đó.
 *   **Tạo Nhóm:** Giao diện hiển thị danh sách bạn bè đã kết bạn, người dùng chỉ cần tick chọn để gom vào Group mới.
-
-> [!IMPORTANT]
-> **User Review Required**
-> 1. Về **Frontend**, bạn đã chốt sẽ dùng công nghệ nào trong 3 lựa chọn trên chưa?
-> 2. Kế hoạch này đã tổng hợp toàn bộ ý tưởng kỹ thuật và luồng logic từ đầu đến giờ. Nếu bạn xác nhận OK, chúng ta có thể chuyển sang bước khởi tạo source code!
