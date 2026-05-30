@@ -1,4 +1,5 @@
 ```mermaid
+%%{init: {'theme': 'default', 'themeCSS': 'svg { background-color: white !important; }', 'themeVariables': { 'background': '#ffffff'}}}%%
 flowchart TD
     %% Định nghĩa màu sắc
     classDef frontend fill:#e1f5fe,stroke:#03a9f4,stroke-width:2px;
