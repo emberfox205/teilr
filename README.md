@@ -17,15 +17,13 @@ flowchart TD
         UI <--> State
         
         subgraph Business_Logic ["Frontend Business Logic"]
-            Logic1["Logic 1-1 (User-User): <br/> Mặc định chia 50/50. <br/> Tự động cân bằng (Auto-balance) phần của <br/> người kia nếu một người thay đổi số tiền."]:::logic
-            Logic2["Logic Group: <br/> Không tự động điều chỉnh. Hiển thị thông báo <br/> trực tiếp (Inline Validation) nếu tổng các <br/> phần chia bị thiếu hoặc vượt quá hóa đơn."]:::logic
-            ChatLogic["Logic Chat & Bill: <br/> Giao tiếp cá nhân/nhóm. Tích hợp nút Split Bill <br/> trong khung chat để tạo và hiển thị hóa đơn <br/> trực quan dưới dạng Khối Bill (Bill Block)."]:::logic
+            LogicGroup["Logic Group: <br/> Không tự động điều chỉnh. Hiển thị thông báo <br/> trực tiếp (Inline Validation) nếu tổng các <br/> phần chia bị thiếu hoặc vượt quá hóa đơn."]:::logic
+            SplitBillButton["SplitBillButton: <br/> Tích hợp nút Split Bill <br/> trong khung chat để tạo và hiển thị hóa đơn <br/> trực quan dưới dạng Khối Bill (Bill Block)."]:::logic
             SocialLogic["Logic Kết Bạn & Tạo Nhóm: <br/> - Kết bạn: Query Database Online để tìm @username. <br/> - Tạo nhóm: Thêm người từ danh sách bạn bè."]:::logic
         end
         
-        State <--> Logic1
-        State <--> Logic2
-        State <--> ChatLogic
+        State <--> LogicGroup
+        State <--> SplitBillButton
         State <--> SocialLogic
     end
 
@@ -114,18 +112,15 @@ Bảng quan trọng nhất để tính ai nợ ai:
 
 ## 4. Luồng hoạt động & Business Logic (Workflows)
 
-### A. Logic Chia Tiền 1-1 (User - User)
-*   **Mặc định:** Hệ thống tự động chia 50/50.
-*   **Auto-balance (Tự động cân bằng):** Nếu tổng bill 10 EUR, bạn sửa phần bạn thành 6 EUR, hệ thống tự động giảm phần người kia xuống 4 EUR. (Hỗ trợ thập phân 2 chữ số).
-
-### B. Logic Chia Tiền Nhóm (Group)
+### A. Logic Chia Tiền Nhóm (Group)
 *   **Mặc định:** Chia đều cho tổng số thành viên nhóm.
 *   **Inline Validation (Cảnh báo tại chỗ):** Không tự động cân bằng. Nếu bạn nhập sai số tiền, hệ thống hiện cảnh báo trực tiếp (Inline Validation) bên dưới: *"Vượt quá 2.00 EUR"* hoặc *"Còn thiếu X.XX EUR"*. Nút gửi chỉ sáng khi tổng khớp.
+--> Tổng hợp các bill để tính sau cùng
 
-### C. Logic Chat & Khối Bill
+### B. Logic Chat & Khối Bill
 *   Giao tiếp cá nhân/nhóm hoạt động như một ứng dụng nhắn tin.
 *   Tích hợp nút **"Split Bill"** trực tiếp trong khung chat. Khi bấm vào, thay vì gửi text, ứng dụng tạo ra một **Khối Bill (Bill Block)** để mọi người bấm vào xem và xác nhận trực quan ngay trong đoạn hội thoại.
 
-### D. Logic Kết Bạn & Tạo Nhóm
+### C. Logic Kết Bạn & Tạo Nhóm
 *   **Kết bạn:** Người dùng gõ `@username` vào thanh tìm kiếm. Frontend sẽ gửi lệnh qua REST API lên Database Online để query chính xác User đó.
 *   **Tạo Nhóm:** Giao diện hiển thị danh sách bạn bè đã kết bạn, người dùng chỉ cần tick chọn để gom vào Group mới.
