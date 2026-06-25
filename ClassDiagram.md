@@ -1,53 +1,62 @@
 # Teilr — Class Diagram
+> ✅ = currently coded · 🔲 = planned (not yet implemented)
+
+---
 
 ## Layer 1: Architecture Overview
 
 ```mermaid
 flowchart TB
-    subgraph CONTROLLER ["🌐 Controller Layer  (HTTP / HTMX)"]
-        GC["GroupController"]
-        EC["ExpenseController"]
-        UC["UserController"]
+    classDef coded fill:#d4edda,stroke:#28a745,color:#000
+    classDef planned fill:#f0f0f0,stroke:#aaaaaa,color:#888,stroke-dasharray: 5 5
+
+    subgraph CONTROLLER ["🌐 Controller Layer"]
+        GC["GroupController ✅"]:::coded
+        UC["UserController ✅"]:::coded
+        EC["ExpenseController 🔲"]:::planned
     end
 
-    subgraph SERVICE ["⚙️ Service Layer  (Business Logic · Spring Singletons)"]
-        GS["GroupService"]
-        ES["ExpenseService"]
-        US["UserService"]
+    subgraph SERVICE ["⚙️ Service Layer"]
+        GS["GroupService ✅"]:::coded
+        US["UserService ✅"]:::coded
+        ES["ExpenseService 🔲"]:::planned
     end
 
-    subgraph REPO ["🗄️ Repository Layer  (DB Access · Spring Interfaces)"]
-        GR["GroupRepository"]
-        BR["BillRepository"]
-        ER["ExpenseSplitRepository"]
-        UR["UserRepository"]
-        FR["FriendshipRepository"]
+    subgraph REPO ["🗄️ Repository Layer"]
+        GR["GroupRepository ✅"]:::coded
+        GMR["GroupMemberRepository ✅"]:::coded
+        UR["UserRepository ✅"]:::coded
+        BR["BillRepository 🔲"]:::planned
+        ER["ExpenseSplitRepository 🔲"]:::planned
+        FR["FriendshipRepository 🔲"]:::planned
     end
 
-    subgraph ENTITY ["📦 Entity Layer  (Data · POJOs · one instance = one DB row)"]
-        U["User"]
-        G["Group"]
-        B["Bill"]
-        EX["ExpenseSplit"]
-        F["Friendship"]
+    subgraph ENTITY ["📦 Entity Layer"]
+        U["User ✅"]:::coded
+        G["Group ✅"]:::coded
+        GM["GroupMember ✅"]:::coded
+        B["Bill 🔲"]:::planned
+        EX["ExpenseSplit 🔲"]:::planned
+        F["Friendship 🔲"]:::planned
     end
 
     GC --> GS
-    EC --> ES
     UC --> US
+    EC --> ES
 
     GS --> GR
+    GS --> GMR
     GS --> UR
+    US --> UR
     ES --> BR
     ES --> ER
     ES --> GR
-    US --> UR
-    US --> FR
 
     GR -.->|returns| G
+    GMR -.->|returns| GM
+    UR -.->|returns| U
     BR -.->|returns| B
     ER -.->|returns| EX
-    UR -.->|returns| U
     FR -.->|returns| F
 ```
 
@@ -73,14 +82,16 @@ classDiagram
     }
 
     class GroupMember {
-        - Long groupId   "FK → Group"
-        - Long userId    "FK → User"
+        - Long id
+        - Long groupId
+        - Long userId
     }
 
     class Bill {
+        <<planned>>
         - Long id
-        - Long groupId       "FK → Group"
-        - Long creatorId     "FK → User"
+        - Long groupId
+        - Long creatorId
         - String description
         - BigDecimal totalAmount
         - String currency
@@ -89,27 +100,29 @@ classDiagram
     }
 
     class BillStatus {
-        <<enumeration>>
+        <<planned>>
         DRAFT
         SUBMITTED
     }
 
     class ExpenseSplit {
-        - Long userId    "composite PK + FK → User"
-        - Long groupId   "composite PK + FK → Group"
+        <<planned>>
+        - Long userId
+        - Long groupId
         - BigDecimal totalOwed
         - BigDecimal totalPaid
         + getBalance() BigDecimal
     }
 
     class Friendship {
-        - Long userIdA   "FK → User"
-        - Long userIdB   "FK → User"
+        <<planned>>
+        - Long userIdA
+        - Long userIdB
         - FriendshipStatus status
     }
 
     class FriendshipStatus {
-        <<enumeration>>
+        <<planned>>
         PENDING
         ACCEPTED
     }
@@ -132,22 +145,29 @@ classDiagram
 classDiagram
     direction LR
 
+    class UserService {
+        <<Service>>
+        - UserRepository userRepository
+        + findById(id Long) Optional~User~
+        + save(user User) User
+    }
+
     class GroupService {
         <<Service>>
-        - GroupRepository groupRepo
-        - UserRepository userRepo
-        + createGroup(name, adminId, memberIds) Group
-        + getGroupsForUser(userId) List~Group~
+        - GroupRepository groupRepository
+        - GroupMemberRepository groupMemberRepository
+        - UserRepository userRepository
+        + createGroup(name, adminId, memIds) Group
+        + findGroupById(groupId) Optional~Group~
         + addMember(groupId, userId) void
         + removeMember(groupId, userId) void
-        + deleteGroup(groupId, requesterId) void
+        + getGroupsForUser(userId) List~Group~
+        + getMembersOfGroup(groupId) List~User~
+        + deleteGroup(groupId, requestedId) void
     }
 
     class ExpenseService {
-        <<Service>>
-        - BillRepository billRepo
-        - ExpenseSplitRepository splitRepo
-        - GroupRepository groupRepo
+        <<planned>>
         + createBill(groupId, creatorId, desc, amount) Bill
         + removeBill(billId, requesterId) void
         + getBillsForGroup(groupId) List~Bill~
@@ -155,58 +175,93 @@ classDiagram
         + getDebtSummary(userId, groupId) ExpenseSplit
     }
 
-    class UserService {
-        <<Service>>
-        - UserRepository userRepo
-        - FriendshipRepository friendRepo
-        + findByUsername(username) User
-        + sendFriendRequest(requesterId, targetUsername) Friendship
-        + acceptFriendRequest(friendshipId) void
-        + getFriends(userId) List~User~
+    class UserRepository {
+        <<Repository>>
+        + findById(id Long) Optional~User~
+        + existsById(id Long) boolean
+        + save(user User) User
+        + delete(user User) void
     }
 
     class GroupRepository {
         <<Repository>>
-        + findById(id) Group
-        + findByMemberId(userId) List~Group~
-        + save(group) Group
-        + delete(id) void
+        + findById(id Long) Optional~Group~
+        + save(group Group) Group
+        + delete(group Group) void
+    }
+
+    class GroupMemberRepository {
+        <<Repository>>
+        + findByGroupId(groupId Long) List~GroupMember~
+        + findByUserId(userId Long) List~GroupMember~
+        + existsByGroupIdAndUserId(groupId, userId) boolean
+        + deleteByGroupIdAndUserId(groupId, userId) void
     }
 
     class BillRepository {
-        <<Repository>>
-        + findById(id) Bill
+        <<planned>>
+        + findById(id Long) Bill
         + findByGroupId(groupId) List~Bill~
-        + save(bill) Bill
-        + delete(id) void
+        + save(bill Bill) Bill
+        + delete(id Long) void
     }
 
     class ExpenseSplitRepository {
-        <<Repository>>
+        <<planned>>
         + findByUserIdAndGroupId(uid, gid) ExpenseSplit
         + findByGroupId(groupId) List~ExpenseSplit~
-        + save(split) ExpenseSplit
-    }
-
-    class UserRepository {
-        <<Repository>>
-        + findById(id) User
-        + findByUsername(username) User
-        + save(user) User
+        + save(split ExpenseSplit) ExpenseSplit
     }
 
     class FriendshipRepository {
-        <<Repository>>
+        <<planned>>
         + findByUserId(userId) List~Friendship~
         + findByUserIdAAndUserIdB(a, b) Friendship
-        + save(friendship) Friendship
+        + save(friendship Friendship) Friendship
     }
 
+    UserService --> UserRepository
     GroupService --> GroupRepository
+    GroupService --> GroupMemberRepository
     GroupService --> UserRepository
     ExpenseService --> BillRepository
     ExpenseService --> ExpenseSplitRepository
     ExpenseService --> GroupRepository
-    UserService --> UserRepository
-    UserService --> FriendshipRepository
+```
+
+---
+
+## Layer 4: Controller Endpoints
+
+```mermaid
+classDiagram
+    direction LR
+
+    class UserController {
+        <<Controller>>
+        - UserService userService
+        + GET /users/search userId Long
+    }
+
+    class GroupController {
+        <<Controller>>
+        - GroupService groupService
+        + GET /groups/new
+        + POST /groups
+        + GET /groups userId Long
+        + POST /groups/groupId/members userId
+        + DELETE /groups/groupId requesterId
+    }
+
+    class ExpenseController {
+        <<planned>>
+        + GET /expenses/new groupId
+        + POST /expenses
+        + GET /expenses/summary userId groupId
+        + GET /expenses groupId
+    }
+
+    UserController --> UserService
+    GroupController --> GroupService
+    ExpenseController --> ExpenseService
 ```
