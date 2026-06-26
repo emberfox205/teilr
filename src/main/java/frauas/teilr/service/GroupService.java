@@ -35,11 +35,11 @@ public class GroupService {
         group.setAdminId(adminId);
         Group saved = groupRepository.save(group);
 
-        addMember(saved.getId(), adminId);
+        addMember(saved.getId(), adminId, adminId);
 
         for (Long memberId : memIds) {
             if (!memberId.equals(adminId)) {
-                addMember(saved.getId(), memberId);
+                addMember(saved.getId(), memberId, adminId);
             }
         }
         return saved;
@@ -49,7 +49,13 @@ public class GroupService {
         return groupRepository.findById(groupId);
     }
 
-    public void addMember(Long groupId, Long userId) {
+    public void addMember(Long groupId, Long userId, Long requesterId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("Group not found: " + groupId));
+
+        if (!group.getAdminId().equals(requesterId)) {
+            throw new SecurityException("Only the group admin can add members.");
+        }
         if (!userRepository.existsById(userId)) {
             throw new IllegalArgumentException("User with ID " + userId + " does not exist.");
         }

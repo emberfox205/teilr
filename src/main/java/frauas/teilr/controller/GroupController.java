@@ -80,8 +80,12 @@ public class GroupController {
     @PostMapping("/{groupId}/members")
     public String addMember(@PathVariable Long groupId,
                             @RequestParam Long userId,
+                            HttpSession session,
                             Model model) {
-        groupService.addMember(groupId, userId);
+        Long requesterId = (Long) session.getAttribute("userId");
+        if (requesterId == null) return "redirect:/ui/login";
+
+        groupService.addMember(groupId, userId, requesterId);
         model.addAttribute("groupId", groupId);
         model.addAttribute("members", groupService.getMembersOfGroup(groupId));
         return "fragments/member-list :: memberListContent";
