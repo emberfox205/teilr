@@ -176,6 +176,8 @@ Two transports are in use:
         hx-target="#member-list">Add</button>
 ```
 
+> ⚠️ Throws an exception if the `userId` does not exist in the system.
+
 ---
 
 ### Delete a group *(admin only)*
@@ -349,7 +351,6 @@ await fetch('/api/expenses/bill', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     groupId: 7,
-    creatorId: 1,          // who paid
     description: "Dinner",
     totalAmount: 90.00,
     participantIds: [1, 2, 3],   // everyone who ate
@@ -358,6 +359,8 @@ await fetch('/api/expenses/bill', {
 });
 ```
 
+> **Security**: The `creatorId` (who paid) is securely and automatically inferred from the caller's session cookie.
+> **Validation**: `participantIds` array must NOT be empty, or the server will throw an exception.
 > **Rounding**: The remainder cent(s) (e.g. 100 ÷ 3 = 33.33 + 0.01 leftover) is assigned to `participantIds[0]`.
 
 ---
@@ -378,11 +381,12 @@ await fetch('/api/expenses/settle', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     groupId: 7,
-    debtorId: 2,    // person paying
     creditorId: 1,  // person receiving
     amount: 45.00
   })
 });
 ```
+
+> **Security**: The `debtorId` (who is paying off the debt) is securely and automatically inferred from the caller's session cookie.
 
 Internally reuses `createEqualBill` — the settlement is recorded as a bill where the debtor is the creator and the creditor is the sole participant.
