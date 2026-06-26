@@ -24,7 +24,6 @@ Two transports are in use:
 
 | Param | Required | Notes |
 |---|---|---|
-
 | `username` | ✅ | User handle |
 | `email` | ✅ | Unique email |
 | `passwordHash` | ✅ | The raw password to be hashed |
