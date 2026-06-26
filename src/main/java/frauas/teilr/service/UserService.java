@@ -30,21 +30,34 @@ public class UserService {
             throw new IllegalArgumentException("Password is required.");
         }
 
-        java.util.Set<Long> existingIds = userRepository.findAllIds();
-        if (existingIds.size() >= 10000) {
+        if (userRepository.count() >= 10000) {
             throw new IllegalStateException("Maximum user capacity reached (10,000 users).");
         }
 
         user.setUsername(user.getUsername().trim());
         user.setEmail(user.getEmail().trim());
 
-        // Generate a random 4-digit ID and use in-memory linear probing to find an empty slot
-        // This guarantees exactly 1 database query regardless of how full the database is.
+        // Fast Path: Try up to 3 random guesses (O(1) fast path for sparse database)
         java.util.Random random = new java.util.Random();
-        Long generatedId = (long) random.nextInt(10000); // 0 to 9999
-        
-        while (existingIds.contains(generatedId)) {
-            generatedId = (generatedId + 1) % 10000;
+        Long generatedId = null;
+        for (int i = 0; i < 3; i++) {
+            Long guess = (long) random.nextInt(10000); // 0 to 9999
+            if (!userRepository.existsById(guess)) {
+                generatedId = guess;
+                break;
+            }
+        }
+
+        // Fallback Path: If database is very full, use a single native SQL query to find a gap
+        if (generatedId == null) {
+            if (!userRepository.existsById(0L)) {
+                generatedId = 0L;
+            } else {
+                generatedId = userRepository.findFirstAvailableId();
+                if (generatedId == null) {
+                    throw new IllegalStateException("Maximum user capacity reached (10,000 users).");
+                }
+            }
         }
         
         user.setId(generatedId);

@@ -27,6 +27,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
-    @org.springframework.data.jpa.repository.Query("SELECT u.id FROM User u")
-    java.util.Set<Long> findAllIds();
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT MIN(u1.id + 1) FROM users u1 LEFT JOIN users u2 ON u1.id + 1 = u2.id WHERE u2.id IS NULL AND u1.id < 9999",
+        nativeQuery = true
+    )
+    Long findFirstAvailableId();
 }
