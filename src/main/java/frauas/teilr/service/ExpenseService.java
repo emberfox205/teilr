@@ -34,6 +34,10 @@ public class ExpenseService {
     public Bill createEqualBill(Long groupId, Long creatorId, String description,
                                 BigDecimal totalAmount, List<Long> participantIds, String participantNames) {
 
+        if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Bill amount must be strictly positive");
+        }
+
         if (participantIds == null || participantIds.isEmpty()) {
             throw new IllegalArgumentException("Bill must have at least one participant");
         }
