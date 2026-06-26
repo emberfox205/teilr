@@ -184,9 +184,3 @@ users ──< friendships (as sender or recipient)
 user_groups ──< bills
 user_groups ──< expense_splits
 ```
-
-## Planned Tables (from README)
-
-| Table | Purpose | Blocked on |
-|---|---|---|
-| `messages` | In-group and direct chat, with optional bill attachment | Chat UI + WebSocket infrastructure |
