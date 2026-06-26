@@ -6,11 +6,11 @@ import frauas.teilr.service.GroupService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -84,10 +84,9 @@ public class GroupController {
      * Called by: hx-delete="/groups/{groupId}?requesterId=0001"
      */
     @DeleteMapping("/{groupId}")
-    @ResponseBody
-    public String deleteGroup(@PathVariable Long groupId,
+    public ResponseEntity<Void> deleteGroup(@PathVariable Long groupId,
                               @RequestParam Long requesterId) {
         groupService.deleteGroup(groupId, requesterId);
-        return ""; // HTMX removes the element from the DOM
+        return ResponseEntity.noContent().build(); // HTMX removes the element from the DOM
     }
 }

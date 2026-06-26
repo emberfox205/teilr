@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,19 +60,15 @@ public class GroupService {
     public List<Group> getGroupsForUser (Long userId) {
         return groupMemberRepository.findByUserId(userId)
                 .stream()
-                .map(gm -> groupRepository.findById(gm.getGroupId()))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
+                .flatMap(gm -> groupRepository.findById(gm.getGroupId()).stream())
+                .toList();
     }
 
     public List<User> getMembersOfGroup(Long groupId) {
         return groupMemberRepository.findByGroupId(groupId)
-            .stream()
-                .map(gm -> userRepository.findById(gm.getUserId()))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
+                .stream()
+                .flatMap(gm -> userRepository.findById(gm.getUserId()).stream())
+                .toList();
     }
 
     /**

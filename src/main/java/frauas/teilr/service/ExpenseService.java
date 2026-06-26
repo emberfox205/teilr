@@ -7,6 +7,8 @@ import frauas.teilr.repository.BillRepository;
 import frauas.teilr.repository.ExpenseSplitRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -49,6 +51,7 @@ public class ExpenseService {
 
         // 4. Cập nhật "Sổ tổng nợ" cho NHỮNG NGƯỜI THAM GIA (Bao gồm cả Creator nếu ăn chung)
         //tinh nang chon ng than gia chua?
+        List<ExpenseSplit> toSave = new ArrayList<>();
         for (int i = 0; i < participantIds.size(); i++) {
             Long participantId = participantIds.get(i);
             ExpenseSplit participantSplit = getOrCreateExpenseSplit(participantId, groupId);
@@ -60,8 +63,10 @@ public class ExpenseService {
             }
 
             participantSplit.setTotalOwed(participantSplit.getTotalOwed().add(amountToOwe));
-            expenseSplitRepository.save(participantSplit);
+            toSave.add(participantSplit);
         }
+        // A group of 10 people = 10 sequential DB round-trips per bill. saveAll() batches them into one
+        expenseSplitRepository.saveAll(toSave);
 
         return savedBill;
     }
@@ -72,14 +77,11 @@ public class ExpenseService {
         List<ExpenseSplit> allSplits = expenseSplitRepository.findByGroupId(groupId);
 
         // Lọc ra phe Con Nợ (Balance < 0) và đổi dấu thành số dương để dễ tính toán
-        List<ExpenseSplit> debtors = allSplits.stream()
-                .filter(s -> s.getBalance().compareTo(BigDecimal.ZERO) < 0)
-                .collect(Collectors.toList());
-
         // Lọc ra phe Chủ Nợ (Balance > 0)
-        List<ExpenseSplit> creditors = allSplits.stream()
-                .filter(s -> s.getBalance().compareTo(BigDecimal.ZERO) > 0)
-                .collect(Collectors.toList());
+        Map<Boolean, List<ExpenseSplit>> split = allSplits.stream()
+            .collect(Collectors.partitioningBy(s -> s.getBalance().compareTo(BigDecimal.ZERO) > 0));
+        List<ExpenseSplit> creditors = split.get(true);
+        List<ExpenseSplit> debtors   = split.get(false);
 
         List<SimplifiedDebtDTO> simplifiedDebts = new ArrayList<>();
         int i = 0; // Con trỏ của list Con Nợ
