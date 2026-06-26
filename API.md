@@ -28,9 +28,9 @@ Two transports are in use:
 
 | Param | Required | Notes |
 |---|---|---|
-| `username` | ✅ | User handle |
-| `email` | ✅ | Unique email |
-| `passwordHash` | ✅ | The raw password to be hashed |
+| `username` | ✅ | User handle (must not be blank) |
+| `email` | ✅ | Unique email (must not be blank) |
+| `passwordHash` | ✅ | The raw password to be hashed (must not be blank) |
 
 ---
 
@@ -123,7 +123,7 @@ Two transports are in use:
 
 | Param | Required | Notes |
 |---|---|---|
-| `name` | ✅ | Group display name |
+| `name` | ✅ | Group display name (must not be blank) |
 | `adminId` | ✅ | ID of the creating user — becomes admin |
 | `memberIds` | ❌ | Repeat for multiple: `memberIds=1&memberIds=2`. Admin is always added, even if omitted. |
 
@@ -265,6 +265,7 @@ await fetch(`/api/friends/request?targetId=${them}`, {
 ```
 
 > ⚠️ Returns `500` if a request already exists in either direction, or if `requesterId === targetId`. Check and handle gracefully.
+> ⚠️ **Validation**: Throws an exception if the `targetId` does not exist in the system.
 
 ---
 

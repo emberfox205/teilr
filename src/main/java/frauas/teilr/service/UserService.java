@@ -30,6 +30,13 @@ public class UserService {
             throw new IllegalArgumentException("Password is required.");
         }
 
+        if (userRepository.count() >= 10000) {
+            throw new IllegalStateException("Maximum user capacity reached (10,000 users).");
+        }
+
+        user.setUsername(user.getUsername().trim());
+        user.setEmail(user.getEmail().trim());
+
         // Generate a random 4-digit ID that is not already taken
         java.util.Random random = new java.util.Random();
         Long generatedId;
