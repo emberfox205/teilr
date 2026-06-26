@@ -58,17 +58,17 @@ public class GroupService {
     }
 
     public List<Group> getGroupsForUser (Long userId) {
-        return groupMemberRepository.findByUserId(userId)
-                .stream()
-                .flatMap(gm -> groupRepository.findById(gm.getGroupId()).stream())
+        List<Long> groupIds = groupMemberRepository.findByUserId(userId).stream()
+                .map(GroupMember::getGroupId)
                 .toList();
+        return groupRepository.findAllById(groupIds);
     }
 
     public List<User> getMembersOfGroup(Long groupId) {
-        return groupMemberRepository.findByGroupId(groupId)
-                .stream()
-                .flatMap(gm -> userRepository.findById(gm.getUserId()).stream())
+        List<Long> userIds = groupMemberRepository.findByGroupId(groupId).stream()
+                .map(GroupMember::getUserId)
                 .toList();
+        return userRepository.findAllById(userIds);
     }
 
     /**

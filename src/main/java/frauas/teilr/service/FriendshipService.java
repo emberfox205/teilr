@@ -50,10 +50,10 @@ public class FriendshipService {
 
     /** Returns the list of accepted friends (User objects) for the given user. */
     public List<User> getFriends(Long userId) {
-        return friendshipRepository.findAcceptedByUserId(userId).stream()
+        List<Long> friendIds = friendshipRepository.findAcceptedByUserId(userId).stream()
                 .map(f -> f.getUserIdA().equals(userId) ? f.getUserIdB() : f.getUserIdA())
-                .map(friendId -> userRepository.findById(friendId).orElseThrow())
                 .toList();
+        return userRepository.findAllById(friendIds);
     }
 
     /** Returns incoming PENDING requests for a user. */
