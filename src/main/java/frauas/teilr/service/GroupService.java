@@ -45,6 +45,10 @@ public class GroupService {
     }
 
     public void addMember(Long groupId, Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("User with ID " + userId + " does not exist.");
+        }
+
         if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
             GroupMember member = new GroupMember();
             member.setGroupId(groupId);
