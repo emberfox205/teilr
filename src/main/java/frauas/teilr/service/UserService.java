@@ -4,6 +4,7 @@ import frauas.teilr.entity.User;
 import frauas.teilr.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -19,12 +20,29 @@ public class UserService {
     }
 
     public User register(User user) {
-        if (user.getId() < 0 || user.getId() > 9999) {
-            throw new IllegalArgumentException("User ID must be between 0000 and 9999.");
+        // Generate a random 4-digit ID that is not already taken
+        java.util.Random random = new java.util.Random();
+        Long generatedId;
+        do {
+            generatedId = (long) random.nextInt(10000); // 0 to 9999
+        } while (userRepository.existsById(generatedId));
+        user.setId(generatedId);
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email '" + user.getEmail() + "' is already taken.");
         }
-        if (userRepository.existsById(user.getId())) {
-            throw new IllegalArgumentException("User ID " + user.getId() + " is already taken.");
-        }
+        user.setPasswordHash(BCrypt.hashpw(user.getPasswordHash(), BCrypt.gensalt()));
         return userRepository.save(user);
+    }
+
+    public Optional<User> authenticate(String identifier, String rawPassword) {
+        Optional<User> userOpt;
+        try {
+            Long id = Long.parseLong(identifier);
+            userOpt = userRepository.findById(id);
+        } catch (NumberFormatException e) {
+            userOpt = userRepository.findByEmail(identifier);
+        }
+        
+        return userOpt.filter(user -> BCrypt.checkpw(rawPassword, user.getPasswordHash()));
     }
 }

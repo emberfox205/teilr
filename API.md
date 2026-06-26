@@ -10,6 +10,57 @@ Two transports are in use:
 
 ## Users
 
+### Register a new user
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **URL** | `/api/users/register` |
+| **Transport** | Form Submit (HTMX) |
+| **Body** | `application/x-www-form-urlencoded` |
+| **Response** | `302 Redirect` to `/ui/home` on success, or `/ui/register?error=true` |
+
+**Parameters**
+
+| Param | Required | Notes |
+|---|---|---|
+
+| `username` | ✅ | User handle |
+| `email` | ✅ | Unique email |
+| `passwordHash` | ✅ | The raw password to be hashed |
+
+---
+
+### Log in
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **URL** | `/api/users/login` |
+| **Transport** | Form Submit (HTMX) |
+| **Body** | `application/x-www-form-urlencoded` |
+| **Response** | `302 Redirect` to `/ui/home` on success, or `/ui/login?error=true` |
+
+**Parameters**
+
+| Param | Required | Notes |
+|---|---|---|
+| `identifier` | ✅ | Email or 4-digit ID |
+| `passwordHash` | ✅ | The raw password |
+
+---
+
+### Log out
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **URL** | `/api/users/logout` |
+| **Transport** | Form Submit (HTMX) |
+| **Response** | `302 Redirect` to `/ui/login` |
+
+---
+
 ### Search for a user by ID
 
 | | |

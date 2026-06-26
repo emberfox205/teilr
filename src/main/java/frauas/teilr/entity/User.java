@@ -15,6 +15,8 @@ public class User {
     private Long id;
 
     private String username;
+    
+    @Column(unique = true)
     private String email;
 
     /** Always store a hashed password — never raw plaintext. */
