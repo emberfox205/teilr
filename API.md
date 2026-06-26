@@ -6,6 +6,10 @@ Two transports are in use:
 - **HTMX** endpoints return a rendered Thymeleaf HTML fragment — swap it directly into the DOM with `hx-target`.
 - **REST** endpoints return JSON — use `fetch` / `axios` / your preferred HTTP client.
 
+> [!IMPORTANT]
+> **Authentication & Security**
+> This API uses Spring `HttpSession` cookies to track the logged-in user. You do **not** need to manually pass `userId` or `requesterId` in the query parameters or body for actions you perform. The backend automatically knows who you are based on your session cookie. Always rely on the session!
+
 ---
 
 ## Users
@@ -146,12 +150,12 @@ Two transports are in use:
 | | |
 |---|---|
 | **Method** | `GET` |
-| **URL** | `/api/groups?userId={id}` |
+| **URL** | `/api/groups` |
 | **Transport** | HTMX |
 | **Fragment** | `fragments/group-list :: groupListContent` |
 
 ```html
-<div hx-get="/api/groups?userId={{currentUserId}}"
+<div hx-get="/api/groups"
      hx-trigger="load"
      hx-target="#group-list"></div>
 ```
@@ -179,12 +183,12 @@ Two transports are in use:
 | | |
 |---|---|
 | **Method** | `DELETE` |
-| **URL** | `/api/groups/{groupId}?requesterId={id}` |
+| **URL** | `/api/groups/{groupId}` |
 | **Transport** | HTMX |
 | **Response** | `204 No Content` — HTMX removes the element |
 
 ```html
-<button hx-delete="/api/groups/{{groupId}}?requesterId={{currentUserId}}"
+<button hx-delete="/api/groups/{{groupId}}"
         hx-target="closest .group-card"
         hx-swap="outerHTML">Delete Group</button>
 ```
@@ -200,13 +204,13 @@ Two transports are in use:
 | | |
 |---|---|
 | **Method** | `GET` |
-| **URL** | `/api/friends?userId={id}` |
+| **URL** | `/api/friends` |
 | **Transport** | HTMX |
 | **Fragment** | `fragments/friend-list :: friendListContent` |
 | **Primary use** | Populate the member tick-list in the "Create Group" form |
 
 ```html
-<div hx-get="/api/friends?userId={{currentUserId}}"
+<div hx-get="/api/friends"
      hx-trigger="load"
      hx-target="#friend-list"></div>
 ```
@@ -224,12 +228,12 @@ Two transports are in use:
 | | |
 |---|---|
 | **Method** | `GET` |
-| **URL** | `/api/friends/pending?userId={id}` |
+| **URL** | `/api/friends/pending` |
 | **Transport** | HTMX |
 | **Fragment** | `fragments/friend-requests :: requestListContent` |
 
 ```html
-<div hx-get="/api/friends/pending?userId={{currentUserId}}"
+<div hx-get="/api/friends/pending"
      hx-trigger="load"
      hx-target="#pending-requests"></div>
 ```
@@ -247,12 +251,12 @@ Two transports are in use:
 | | |
 |---|---|
 | **Method** | `POST` |
-| **URL** | `/api/friends/request?requesterId={id}&targetId={id}` |
+| **URL** | `/api/friends/request?targetId={id}` |
 | **Transport** | REST (JSON response) |
 | **Response** | `200 Friendship` |
 
 ```js
-await fetch(`/api/friends/request?requesterId=${me}&targetId=${them}`, {
+await fetch(`/api/friends/request?targetId=${them}`, {
   method: 'POST'
 });
 ```
@@ -266,12 +270,12 @@ await fetch(`/api/friends/request?requesterId=${me}&targetId=${them}`, {
 | | |
 |---|---|
 | **Method** | `POST` |
-| **URL** | `/api/friends/accept?friendshipId={id}&userId={id}` |
+| **URL** | `/api/friends/accept?friendshipId={id}` |
 | **Transport** | REST (JSON response) |
 | **Response** | `200 Friendship` with `status: "ACCEPTED"` |
 
 ```js
-await fetch(`/api/friends/accept?friendshipId=${reqId}&userId=${me}`, {
+await fetch(`/api/friends/accept?friendshipId=${reqId}`, {
   method: 'POST'
 });
 ```

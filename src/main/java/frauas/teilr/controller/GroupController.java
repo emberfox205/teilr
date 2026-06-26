@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.http.HttpStatus;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.List;
 
@@ -42,9 +44,12 @@ public class GroupController {
      */
     @PostMapping
     public String createGroup(@RequestParam String name,
-                              @RequestParam Long adminId,
                               @RequestParam(required = false) List<Long>memberIds,
+                              HttpSession session,
                               Model model) {
+        Long adminId = (Long) session.getAttribute("userId");
+        if (adminId == null) return "redirect:/ui/login";
+
         List<Long> members = (memberIds != null) ? memberIds : List.of();
         Group created = groupService.createGroup(name, adminId, members);
         List<User> memberList = groupService.getMembersOfGroup(created.getId());
@@ -59,7 +64,10 @@ public class GroupController {
      * Called by: hx-get="/groups?userId=0001"
      */
     @GetMapping
-    public String listGroupForUser(@RequestParam Long userId, Model model) {
+    public String listGroupForUser(HttpSession session, Model model) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) return "redirect:/ui/login";
+
         List<Group> groups = groupService.getGroupsForUser(userId);
         model.addAttribute("groups", groups);
         return "fragments/group-list :: groupListContent";
@@ -85,7 +93,10 @@ public class GroupController {
      */
     @DeleteMapping("/{groupId}")
     public ResponseEntity<Void> deleteGroup(@PathVariable Long groupId,
-                              @RequestParam Long requesterId) {
+                              HttpSession session) {
+        Long requesterId = (Long) session.getAttribute("userId");
+        if (requesterId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
         groupService.deleteGroup(groupId, requesterId);
         return ResponseEntity.noContent().build(); // HTMX removes the element from the DOM
     }

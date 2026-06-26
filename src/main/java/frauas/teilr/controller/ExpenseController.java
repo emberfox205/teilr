@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.List;
 
@@ -47,13 +48,21 @@ public class ExpenseController {
 
     // --- 3. API Tạo Hóa Đơn Chia Đều (Equal Split) ---
     @PostMapping("/bill")
-    public ResponseEntity<Bill> createBill(@RequestBody BillCreateRequest request) {
+    public ResponseEntity<Bill> createBill(@RequestBody BillCreateRequest request, HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        request.setCreatorId(userId); // Enforce current user as creator
         return ResponseEntity.status(HttpStatus.CREATED).body(expenseService.createEqualBill(request));
     }
 
     // --- 4. API Trả Nợ (Settle Up) ---
     @PostMapping("/settle")
-    public ResponseEntity<Bill> settleUp(@RequestBody SettleUpRequest request) {
+    public ResponseEntity<Bill> settleUp(@RequestBody SettleUpRequest request, HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        request.setDebtorId(userId); // Enforce current user as the one paying off the debt
         return ResponseEntity.ok(expenseService.createEqualBill(
                 request.getGroupId(), request.getDebtorId(), SETTLE_UP,
                 request.getAmount(), List.of(request.getCreditorId()), SETTLE_UP

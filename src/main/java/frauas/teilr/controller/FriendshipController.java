@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.List;
 
@@ -26,7 +28,10 @@ public class FriendshipController {
      * Called by: hx-get="/api/friends?userId=0001"
      */
     @GetMapping
-    public String getFriends(@RequestParam Long userId, Model model) {
+    public String getFriends(HttpSession session, Model model) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) return "redirect:/ui/login";
+
         List<User> friends = friendshipService.getFriends(userId);
         model.addAttribute("friends", friends);
         return "fragments/friend-list :: friendListContent";
@@ -37,7 +42,10 @@ public class FriendshipController {
      * Called by: hx-get="/api/friends/pending?userId=0001"
      */
     @GetMapping("/pending")
-    public String getPendingRequests(@RequestParam Long userId, Model model) {
+    public String getPendingRequests(HttpSession session, Model model) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) return "redirect:/ui/login";
+
         List<Friendship> requests = friendshipService.getPendingRequests(userId);
         model.addAttribute("requests", requests);
         return "fragments/friend-requests :: requestListContent";
@@ -48,8 +56,11 @@ public class FriendshipController {
      * Called by: POST /api/friends/request?requesterId=0001&targetId=0002
      */
     @PostMapping("/request")
-    public ResponseEntity<Friendship> sendRequest(@RequestParam Long requesterId,
+    public ResponseEntity<Friendship> sendRequest(HttpSession session,
                                                   @RequestParam Long targetId) {
+        Long requesterId = (Long) session.getAttribute("userId");
+        if (requesterId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
         return ResponseEntity.ok(friendshipService.sendRequest(requesterId, targetId));
     }
 
@@ -59,7 +70,10 @@ public class FriendshipController {
      */
     @PostMapping("/accept")
     public ResponseEntity<Friendship> acceptRequest(@RequestParam Long friendshipId,
-                                                    @RequestParam Long userId) {
+                                                    HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
         return ResponseEntity.ok(friendshipService.acceptRequest(friendshipId, userId));
     }
 }
