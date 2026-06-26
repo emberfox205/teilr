@@ -15,12 +15,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.util.List;
 
 @Controller
-@RequestMapping("/groups")
+@CrossOrigin(origins = "*")
+@RequestMapping("/api/groups")
 @RequiredArgsConstructor
 public class GroupController {
     private final GroupService groupService;
