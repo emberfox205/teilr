@@ -13,21 +13,21 @@ flowchart TB
     subgraph CONTROLLER ["🌐 Controller Layer"]
         GC["GroupController ✅"]:::coded
         UC["UserController ✅"]:::coded
-        EC["ExpenseController 🔲"]:::planned
+        EC["ExpenseController ✅"]:::coded
     end
 
     subgraph SERVICE ["⚙️ Service Layer"]
         GS["GroupService ✅"]:::coded
         US["UserService ✅"]:::coded
-        ES["ExpenseService 🔲"]:::planned
+        ES["ExpenseService ✅"]:::coded
     end
 
     subgraph REPO ["🗄️ Repository Layer"]
         GR["GroupRepository ✅"]:::coded
         GMR["GroupMemberRepository ✅"]:::coded
         UR["UserRepository ✅"]:::coded
-        BR["BillRepository 🔲"]:::planned
-        ER["ExpenseSplitRepository 🔲"]:::planned
+        BR["BillRepository ✅"]:::coded
+        ER["ExpenseSplitRepository ✅"]:::coded
         FR["FriendshipRepository 🔲"]:::planned
     end
 
@@ -35,8 +35,8 @@ flowchart TB
         U["User ✅"]:::coded
         G["Group ✅"]:::coded
         GM["GroupMember ✅"]:::coded
-        B["Bill 🔲"]:::planned
-        EX["ExpenseSplit 🔲"]:::planned
+        B["Bill ✅"]:::coded
+        EX["ExpenseSplit ✅"]:::coded
         F["Friendship 🔲"]:::planned
     end
 
@@ -50,7 +50,6 @@ flowchart TB
     US --> UR
     ES --> BR
     ES --> ER
-    ES --> GR
 
     GR -.->|returns| G
     GMR -.->|returns| GM
@@ -88,25 +87,19 @@ classDiagram
     }
 
     class Bill {
-        <<planned>>
         - Long id
         - Long groupId
         - Long creatorId
         - String description
         - BigDecimal totalAmount
         - String currency
-        - BillStatus status
+        - String participantNames
+        - String status
         - Instant createdAt
     }
 
-    class BillStatus {
-        <<planned>>
-        DRAFT
-        SUBMITTED
-    }
-
     class ExpenseSplit {
-        <<planned>>
+        - Long id
         - Long userId
         - Long groupId
         - BigDecimal totalOwed
@@ -118,23 +111,15 @@ classDiagram
         <<planned>>
         - Long userIdA
         - Long userIdB
-        - FriendshipStatus status
-    }
-
-    class FriendshipStatus {
-        <<planned>>
-        PENDING
-        ACCEPTED
+        - String status
     }
 
     User "1" --o "n" GroupMember : joins via
     Group "1" --o "n" GroupMember : has
     Group "1" --> "0..*" Bill : contains
-    Group "1" --> "0..*" ExpenseSplit : debt tracked via
+    Group "1" --> "0..*" ExpenseSplit : tracked via
     User "1" --> "0..*" ExpenseSplit : has per group
     User "1" --> "0..*" Friendship : has
-    Bill --> BillStatus : has
-    Friendship --> FriendshipStatus : has
 ```
 
 ---
@@ -167,18 +152,19 @@ classDiagram
     }
 
     class ExpenseService {
-        <<planned>>
-        + createBill(groupId, creatorId, desc, amount) Bill
-        + removeBill(billId, requesterId) void
+        <<Service>>
+        - BillRepository billRepository
+        - ExpenseSplitRepository expenseSplitRepository
+        + createEqualBill(groupId, creatorId, desc, amount, participantIds, participantNames) Bill
+        + getSimplifiedDebts(groupId) List~SimplifiedDebtDTO~
         + getBillsForGroup(groupId) List~Bill~
-        + applyBillToSplits(bill) void
-        + getDebtSummary(userId, groupId) ExpenseSplit
     }
 
     class UserRepository {
         <<Repository>>
         + findById(id Long) Optional~User~
         + existsById(id Long) boolean
+        + findByUsername(username) Optional~User~
         + save(user User) User
         + delete(user User) void
     }
@@ -199,24 +185,23 @@ classDiagram
     }
 
     class BillRepository {
-        <<planned>>
-        + findById(id Long) Bill
-        + findByGroupId(groupId) List~Bill~
+        <<Repository>>
+        + findByGroupId(groupId Long) List~Bill~
         + save(bill Bill) Bill
-        + delete(id Long) void
+        + findById(id Long) Optional~Bill~
+        + delete(bill Bill) void
     }
 
     class ExpenseSplitRepository {
-        <<planned>>
-        + findByUserIdAndGroupId(uid, gid) ExpenseSplit
-        + findByGroupId(groupId) List~ExpenseSplit~
+        <<Repository>>
+        + findByUserIdAndGroupId(userId, groupId) Optional~ExpenseSplit~
+        + findByGroupId(groupId Long) List~ExpenseSplit~
         + save(split ExpenseSplit) ExpenseSplit
     }
 
     class FriendshipRepository {
         <<planned>>
         + findByUserId(userId) List~Friendship~
-        + findByUserIdAAndUserIdB(a, b) Friendship
         + save(friendship Friendship) Friendship
     }
 
@@ -226,7 +211,6 @@ classDiagram
     GroupService --> UserRepository
     ExpenseService --> BillRepository
     ExpenseService --> ExpenseSplitRepository
-    ExpenseService --> GroupRepository
 ```
 
 ---
@@ -238,13 +222,13 @@ classDiagram
     direction LR
 
     class UserController {
-        <<Controller>>
+        <<Controller - Thymeleaf/HTMX>>
         - UserService userService
         + GET /users/search userId Long
     }
 
     class GroupController {
-        <<Controller>>
+        <<Controller - Thymeleaf/HTMX>>
         - GroupService groupService
         + GET /groups/new
         + POST /groups
@@ -254,14 +238,50 @@ classDiagram
     }
 
     class ExpenseController {
-        <<planned>>
-        + GET /expenses/new groupId
-        + POST /expenses
-        + GET /expenses/summary userId groupId
-        + GET /expenses groupId
+        <<RestController - JSON API>>
+        - ExpenseService expenseService
+        + GET /api/expenses/group/groupId/bills
+        + GET /api/expenses/group/groupId/simplified-debts
+        + POST /api/expenses/bill
+        + POST /api/expenses/settle
     }
 
     UserController --> UserService
     GroupController --> GroupService
     ExpenseController --> ExpenseService
+```
+
+---
+
+## Layer 5: DTOs (Data Transfer Objects)
+
+```mermaid
+classDiagram
+    direction LR
+
+    class BillCreateRequest {
+        - Long groupId
+        - Long creatorId
+        - String description
+        - BigDecimal totalAmount
+        - List~Long~ participantIds
+        - String participantNames
+    }
+
+    class SettleUpRequest {
+        - Long groupId
+        - Long debtorId
+        - Long creditorId
+        - BigDecimal amount
+    }
+
+    class SimplifiedDebtDTO {
+        - Long debtorId
+        - Long creditorId
+        - BigDecimal amount
+    }
+
+    ExpenseController ..> BillCreateRequest : receives
+    ExpenseController ..> SettleUpRequest : receives
+    ExpenseController ..> SimplifiedDebtDTO : returns
 ```
