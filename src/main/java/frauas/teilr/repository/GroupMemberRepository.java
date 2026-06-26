@@ -1,27 +1,33 @@
 package frauas.teilr.repository;
 
 import frauas.teilr.entity.GroupMember;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import org.springframework.data.jdbc.repository.query.Modifying;
-import org.springframework.data.jdbc.repository.query.Query;
-import org.springframework.data.repository.CrudRepository;
+@Repository
+public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> {
 
-public interface GroupMemberRepository extends CrudRepository<GroupMember, Long> {
-    /** All members of a group → used to list who is in a group. */
+    /** All members of a group → used to list who is in a group and for bill splits. */
     List<GroupMember> findByGroupId(Long groupId);
-    // SELECT * FROM group_members WHERE group_id = ?
 
-    /** All groups a user belongs to → used to list a user's groups. */
+    /** All groups a user belongs to → used to build the user's dashboard. */
     List<GroupMember> findByUserId(Long userId);
-    // Spring generates: SELECT * FROM group_members WHERE user_id = ?
-
-    /** Remove a specific user from a specific group. */
-    @Modifying
-    @Query("DELETE FROM group_members WHERE group_id = :groupId AND user_id = :userId")
-    void deleteByGroupIdAndUserId(Long groupId, Long userId);
 
     /** Guard against adding the same user twice. */
     boolean existsByGroupIdAndUserId(Long groupId, Long userId);
+
+    /**
+     * Remove a specific user from a specific group.
+     * Uses JPQL (entity class name "GroupMember", not table name "group_members").
+     * @Modifying requires @Transactional — JPA needs a transaction for write operations.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM GroupMember gm WHERE gm.groupId = :groupId AND gm.userId = :userId")
+    void deleteByGroupIdAndUserId(Long groupId, Long userId);
 }

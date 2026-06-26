@@ -1,9 +1,11 @@
 package frauas.teilr.repository;
 
 import frauas.teilr.entity.Group;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface GroupRepository extends CrudRepository<Group, Long>{
-    // Basic CRUD inherited from CrudRepository.
+@Repository
+public interface GroupRepository extends JpaRepository<Group, Long> {
+    // Basic CRUD inherited from JpaRepository (findById, save, delete, findAll, etc.)
     // Add custom queries here as features grow.
 }
