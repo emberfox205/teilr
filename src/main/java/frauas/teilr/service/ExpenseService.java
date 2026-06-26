@@ -32,7 +32,11 @@ public class ExpenseService {
 
     @Transactional
     public Bill createEqualBill(Long groupId, Long creatorId, String description,
-            BigDecimal totalAmount, List<Long> participantIds, String participantNames) {
+                                BigDecimal totalAmount, List<Long> participantIds, String participantNames) {
+
+        if (participantIds == null || participantIds.isEmpty()) {
+            throw new IllegalArgumentException("Bill must have at least one participant");
+        }
 
         Bill bill = new Bill();
         bill.setGroupId(groupId);
@@ -129,10 +133,8 @@ public class ExpenseService {
 
             // Nếu ai đã thanh toán xong phần của mình thì nhích con trỏ sang người tiếp
             // theo
-            if (debtor.balance.compareTo(BigDecimal.ZERO) == 0)
-                i++;
-            if (creditor.balance.compareTo(BigDecimal.ZERO) == 0)
-                j++;
+            if (debtor.balance.compareTo(BigDecimal.ZERO) == 0) i++;
+            if (creditor.balance.compareTo(BigDecimal.ZERO) == 0) j++;
         }
 
         return simplifiedDebts;
