@@ -1,5 +1,6 @@
 package frauas.teilr.service;
 
+import frauas.teilr.dto.BillCreateRequest;
 import frauas.teilr.dto.SimplifiedDebtDTO;
 import frauas.teilr.entity.Bill;
 import frauas.teilr.entity.ExpenseSplit;
@@ -23,6 +24,11 @@ public class ExpenseService {
 
     private final BillRepository billRepository;
     private final ExpenseSplitRepository expenseSplitRepository;
+
+    public Bill createEqualBill(BillCreateRequest r) {
+        return createEqualBill(r.getGroupId(), r.getCreatorId(), r.getDescription(),
+                               r.getTotalAmount(), r.getParticipantIds(), r.getParticipantNames());
+    }
 
     @Transactional
     public Bill createEqualBill(Long groupId, Long creatorId, String description,

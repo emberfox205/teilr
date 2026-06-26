@@ -27,6 +27,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ExpenseController {
 
+    private static final String SETTLE_UP = "Settle Up";
+
     private final ExpenseService expenseService;
 
     // --- 1. API Lấy danh sách Hóa Đơn ---
@@ -46,30 +48,15 @@ public class ExpenseController {
     // --- 3. API Tạo Hóa Đơn Chia Đều (Equal Split) ---
     @PostMapping("/bill")
     public ResponseEntity<Bill> createBill(@RequestBody BillCreateRequest request) {
-        Bill newBill = expenseService.createEqualBill(
-                request.getGroupId(),
-                request.getCreatorId(),
-                request.getDescription(),
-                request.getTotalAmount(),
-                request.getParticipantIds(),
-                request.getParticipantNames()
-        );
-        return ResponseEntity.status(HttpStatus.CREATED).body(newBill);
+        return ResponseEntity.status(HttpStatus.CREATED).body(expenseService.createEqualBill(request));
     }
 
     // --- 4. API Trả Nợ (Settle Up) ---
     @PostMapping("/settle")
     public ResponseEntity<Bill> settleUp(@RequestBody SettleUpRequest request) {
-        // Tái sử dụng lại logic chia tiền. Con nợ (debtor) là người tạo bill trả tiền,
-        // Chủ nợ (creditor) là người duy nhất "hưởng" cái bill đó.
-        Bill settleBill = expenseService.createEqualBill(
-                request.getGroupId(),
-                request.getDebtorId(),
-                "Settle Up",
-                request.getAmount(),
-                List.of(request.getCreditorId()), // Biến thành 1 List chỉ chứa ID chủ nợ
-                "Settle Up Transaction"
-        );
-        return ResponseEntity.ok(settleBill);
+        return ResponseEntity.ok(expenseService.createEqualBill(
+                request.getGroupId(), request.getDebtorId(), SETTLE_UP,
+                request.getAmount(), List.of(request.getCreditorId()), SETTLE_UP
+        ));
     }
 }
