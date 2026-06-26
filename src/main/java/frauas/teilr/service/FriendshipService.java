@@ -24,6 +24,9 @@ public class FriendshipService {
         if (requesterId.equals(targetId)) {
             throw new IllegalArgumentException("Cannot friend yourself.");
         }
+        if (!userRepository.existsById(targetId)) {
+            throw new IllegalArgumentException("Target user does not exist.");
+        }
         // Check both directions to prevent duplicates
         if (friendshipRepository.findByUserIdAAndUserIdB(requesterId, targetId).isPresent() ||
             friendshipRepository.findByUserIdAAndUserIdB(targetId, requesterId).isPresent()) {

@@ -20,6 +20,16 @@ public class UserService {
     }
 
     public User register(User user) {
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException("Username is required.");
+        }
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            throw new IllegalArgumentException("Email is required.");
+        }
+        if (user.getPasswordHash() == null || user.getPasswordHash().trim().isEmpty()) {
+            throw new IllegalArgumentException("Password is required.");
+        }
+
         // Generate a random 4-digit ID that is not already taken
         java.util.Random random = new java.util.Random();
         Long generatedId;

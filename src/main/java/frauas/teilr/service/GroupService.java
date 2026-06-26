@@ -30,8 +30,12 @@ public class GroupService {
      * member.
      */
     public Group createGroup(String name, Long adminId, List<Long> memIds) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Group name cannot be empty.");
+        }
+
         Group group = new Group();
-        group.setName(name);
+        group.setName(name.trim());
         group.setAdminId(adminId);
         Group saved = groupRepository.save(group);
 
