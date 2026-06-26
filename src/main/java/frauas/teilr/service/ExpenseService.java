@@ -27,12 +27,12 @@ public class ExpenseService {
 
     public Bill createEqualBill(BillCreateRequest r) {
         return createEqualBill(r.getGroupId(), r.getCreatorId(), r.getDescription(),
-                               r.getTotalAmount(), r.getParticipantIds(), r.getParticipantNames());
+                r.getTotalAmount(), r.getParticipantIds(), r.getParticipantNames());
     }
 
     @Transactional
     public Bill createEqualBill(Long groupId, Long creatorId, String description,
-                                BigDecimal totalAmount, List<Long> participantIds, String participantNames) {
+            BigDecimal totalAmount, List<Long> participantIds, String participantNames) {
 
         Bill bill = new Bill();
         bill.setGroupId(groupId);
@@ -46,7 +46,7 @@ public class ExpenseService {
         int numPeople = participantIds.size();
         BigDecimal divisor = new BigDecimal(numPeople);
         // Chia lấy phần nguyên (vd: 100 / 3 = 33.33)
-        BigDecimal baseOwed = totalAmount.divide(divisor, 2, RoundingMode.DOWN); 
+        BigDecimal baseOwed = totalAmount.divide(divisor, 2, RoundingMode.DOWN);
         // Tính tiền dư (vd: 100 - (33.33 * 3) = 0.01)
         BigDecimal remainder = totalAmount.subtract(baseOwed.multiply(divisor));
 
@@ -55,8 +55,9 @@ public class ExpenseService {
         creatorSplit.setTotalPaid(creatorSplit.getTotalPaid().add(totalAmount));
         expenseSplitRepository.save(creatorSplit);
 
-        // 4. Cập nhật "Sổ tổng nợ" cho NHỮNG NGƯỜI THAM GIA (Bao gồm cả Creator nếu ăn chung)
-        //tinh nang chon ng than gia chua?
+        // 4. Cập nhật "Sổ tổng nợ" cho NHỮNG NGƯỜI THAM GIA (Bao gồm cả Creator nếu ăn
+        // chung)
+        // tinh nang chon ng than gia chua?
         List<ExpenseSplit> toSave = new ArrayList<>();
         for (int i = 0; i < participantIds.size(); i++) {
             Long participantId = participantIds.get(i);
@@ -71,57 +72,74 @@ public class ExpenseService {
             participantSplit.setTotalOwed(participantSplit.getTotalOwed().add(amountToOwe));
             toSave.add(participantSplit);
         }
-        // A group of 10 people = 10 sequential DB round-trips per bill. saveAll() batches them into one
+        // A group of 10 people = 10 sequential DB round-trips per bill. saveAll()
+        // batches them into one
         expenseSplitRepository.saveAll(toSave);
 
         return savedBill;
     }
 
-
     // --- 2. THUẬT TOÁN GOM NỢ TỐI ƯU (SIMPLIFY DEBTS) ---
+    private static class BalanceCalc {
+        Long userId;
+        BigDecimal balance;
+
+        BalanceCalc(Long userId, BigDecimal balance) {
+            this.userId = userId;
+            this.balance = balance;
+        }
+    }
+
     public List<SimplifiedDebtDTO> getSimplifiedDebts(Long groupId) {
         List<ExpenseSplit> allSplits = expenseSplitRepository.findByGroupId(groupId);
 
-        // Lọc ra phe Con Nợ (Balance < 0) và đổi dấu thành số dương để dễ tính toán
-        // Lọc ra phe Chủ Nợ (Balance > 0)
+        // Chia làm 2 phe: Chủ Nợ (>0) là true, phần còn lại (<=0) là false
         Map<Boolean, List<ExpenseSplit>> split = allSplits.stream()
             .collect(Collectors.partitioningBy(s -> s.getBalance().compareTo(BigDecimal.ZERO) > 0));
-        List<ExpenseSplit> creditors = split.get(true);
-        List<ExpenseSplit> debtors   = split.get(false);
+
+        // Phe Chủ Nợ (Balance > 0)
+        List<BalanceCalc> creditors = split.get(true).stream()
+            .map(s -> new BalanceCalc(s.getUserId(), s.getBalance()))
+            .toList();
+
+        // Phe Con Nợ (Lọc bỏ số 0 nếu có, lấy < 0) và đổi dấu thành số dương để dễ tính toán
+        List<BalanceCalc> debtors = split.get(false).stream()
+            .filter(s -> s.getBalance().compareTo(BigDecimal.ZERO) < 0)
+            .map(s -> new BalanceCalc(s.getUserId(), s.getBalance().abs()))
+            .toList();
 
         List<SimplifiedDebtDTO> simplifiedDebts = new ArrayList<>();
         int i = 0; // Con trỏ của list Con Nợ
         int j = 0; // Con trỏ của list Chủ Nợ
 
         while (i < debtors.size() && j < creditors.size()) {
-            ExpenseSplit debtor = debtors.get(i);
-            ExpenseSplit creditor = creditors.get(j);
-
-            // Lấy trị tuyệt đối số tiền nợ (để bỏ dấu âm đi)
-            BigDecimal debtAmount = debtor.getBalance().abs();
-            BigDecimal creditAmount = creditor.getBalance();        
+            BalanceCalc debtor = debtors.get(i);
+            BalanceCalc creditor = creditors.get(j);
 
             // Tìm số tiền có thể cấn trừ ngay lập tức (Lấy số nhỏ hơn)
-            BigDecimal minAmount = debtAmount.min(creditAmount);
+            BigDecimal minAmount = debtor.balance.min(creditor.balance);
 
             // Thêm vào danh sách kết quả trả về
-            simplifiedDebts.add(new SimplifiedDebtDTO(debtor.getUserId(), creditor.getUserId(), minAmount));
+            simplifiedDebts.add(new SimplifiedDebtDTO(debtor.userId, creditor.userId, minAmount));
 
-            // Trừ dần tiền nợ ảo trong vòng lặp
-            debtor.setTotalPaid(debtor.getTotalPaid().add(minAmount)); // Đẩy balance lên
-            creditor.setTotalOwed(creditor.getTotalOwed().add(minAmount)); // Kéo balance xuống
+            // Trừ dần tiền nợ ảo trong vòng lặp (Với class giả lập, an toàn không dính OSIV
+            // bug)
+            debtor.balance = debtor.balance.subtract(minAmount);
+            creditor.balance = creditor.balance.subtract(minAmount);
 
-            // Nếu ai đã thanh toán xong phần của mình thì nhích con trỏ sang người tiếp theo
-            if (debtor.getBalance().compareTo(BigDecimal.ZERO) == 0) i++;
-            if (creditor.getBalance().compareTo(BigDecimal.ZERO) == 0) j++;
+            // Nếu ai đã thanh toán xong phần của mình thì nhích con trỏ sang người tiếp
+            // theo
+            if (debtor.balance.compareTo(BigDecimal.ZERO) == 0)
+                i++;
+            if (creditor.balance.compareTo(BigDecimal.ZERO) == 0)
+                j++;
         }
 
         return simplifiedDebts;
     }
 
-
     // --- HÀM TIỆN ÍCH BỔ TRỢ ---
-    
+
     // Lấy danh sách Bill để hiện ra UI
     public List<Bill> getBillsForGroup(Long groupId) {
         return billRepository.findByGroupId(groupId);

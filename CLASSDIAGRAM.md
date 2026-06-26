@@ -251,9 +251,9 @@ classDiagram
         - GroupService groupService
         + GET /groups/new
         + POST /groups
-        + GET /groups userId Long
+        + GET /groups
         + POST /groups/groupId/members userId
-        + DELETE /groups/groupId requesterId
+        + DELETE /groups/groupId
     }
 
     class ExpenseController {
@@ -268,10 +268,10 @@ classDiagram
     class FriendshipController {
         <<Controller - HTMX/REST>>
         - FriendshipService friendshipService
-        + GET /api/friends userId
-        + GET /api/friends/pending userId
-        + POST /api/friends/request requesterId targetId
-        + POST /api/friends/accept friendshipId userId
+        + GET /api/friends
+        + GET /api/friends/pending
+        + POST /api/friends/request targetId
+        + POST /api/friends/accept friendshipId
     }
 
     UserController --> UserService
@@ -308,6 +308,12 @@ classDiagram
         - Long debtorId
         - Long creditorId
         - BigDecimal amount
+    }
+
+    class BalanceCalc {
+        <<Internal DTO - OSIV Safe>>
+        - Long userId
+        - BigDecimal balance
     }
 
     ExpenseController ..> BillCreateRequest : receives
