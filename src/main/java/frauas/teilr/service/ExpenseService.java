@@ -4,8 +4,10 @@ import frauas.teilr.dto.BillCreateRequest;
 import frauas.teilr.dto.SimplifiedDebtDTO;
 import frauas.teilr.entity.Bill;
 import frauas.teilr.entity.ExpenseSplit;
+import frauas.teilr.entity.GroupMember;
 import frauas.teilr.repository.BillRepository;
 import frauas.teilr.repository.ExpenseSplitRepository;
+import frauas.teilr.repository.GroupMemberRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -16,6 +18,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,6 +27,7 @@ public class ExpenseService {
 
     private final BillRepository billRepository;
     private final ExpenseSplitRepository expenseSplitRepository;
+    private final GroupMemberRepository groupMemberRepository;
 
     public Bill createEqualBill(BillCreateRequest r) {
         return createEqualBill(r.getGroupId(), r.getCreatorId(), r.getDescription(),
@@ -40,6 +44,22 @@ public class ExpenseService {
 
         if (participantIds == null || participantIds.isEmpty()) {
             throw new IllegalArgumentException("Bill must have at least one participant");
+        }
+
+        // --- VALIDATION: NGƯỜI DÙNG CÓ TRONG NHÓM KHÔNG? ---
+        List<GroupMember> groupMembers = groupMemberRepository.findByGroupId(groupId);
+        Set<Long> validMemberIds = groupMembers.stream()
+                .map(GroupMember::getUserId)
+                .collect(Collectors.toSet());
+
+        if (!validMemberIds.contains(creatorId)) {
+            throw new SecurityException("Creator must be a member of the group");
+        }
+
+        for (Long pId : participantIds) {
+            if (!validMemberIds.contains(pId)) {
+                throw new IllegalArgumentException("Participant " + pId + " is not a member of the group");
+            }
         }
 
         Bill bill = new Bill();
