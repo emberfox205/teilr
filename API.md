@@ -176,6 +176,7 @@ Two transports are in use:
         hx-target="#member-list">Add</button>
 ```
 
+> ⚠️ **Security**: Only the **Group Admin** can add members. Throws a `403 SecurityException` if the caller is not the admin.
 > ⚠️ Throws an exception if the `userId` does not exist in the system.
 
 ---
@@ -360,7 +361,10 @@ await fetch('/api/expenses/bill', {
 ```
 
 > **Security**: The `creatorId` (who paid) is securely and automatically inferred from the caller's session cookie.
+> **Security**: The backend validates that both the `creatorId` and ALL `participantIds` belong to the group. Cross-group debt forgery will throw an exception.
 > **Validation**: `participantIds` array must NOT be empty, or the server will throw an exception.
+> **Validation**: `totalAmount` must be strictly positive (`> 0`).
+> **Validation**: `participantIds` array must NOT be empty.
 > **Rounding**: The remainder cent(s) (e.g. 100 ÷ 3 = 33.33 + 0.01 leftover) is assigned to `participantIds[0]`.
 
 ---
