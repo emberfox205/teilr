@@ -30,19 +30,23 @@ public class UserService {
             throw new IllegalArgumentException("Password is required.");
         }
 
-        if (userRepository.count() >= 10000) {
+        java.util.Set<Long> existingIds = userRepository.findAllIds();
+        if (existingIds.size() >= 10000) {
             throw new IllegalStateException("Maximum user capacity reached (10,000 users).");
         }
 
         user.setUsername(user.getUsername().trim());
         user.setEmail(user.getEmail().trim());
 
-        // Generate a random 4-digit ID that is not already taken
+        // Generate a random 4-digit ID and use in-memory linear probing to find an empty slot
+        // This guarantees exactly 1 database query regardless of how full the database is.
         java.util.Random random = new java.util.Random();
-        Long generatedId;
-        do {
-            generatedId = (long) random.nextInt(10000); // 0 to 9999
-        } while (userRepository.existsById(generatedId));
+        Long generatedId = (long) random.nextInt(10000); // 0 to 9999
+        
+        while (existingIds.contains(generatedId)) {
+            generatedId = (generatedId + 1) % 10000;
+        }
+        
         user.setId(generatedId);
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email '" + user.getEmail() + "' is already taken.");
