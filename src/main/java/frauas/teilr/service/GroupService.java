@@ -6,6 +6,9 @@ import frauas.teilr.entity.User;
 import frauas.teilr.repository.GroupMemberRepository;
 import frauas.teilr.repository.GroupRepository;
 import frauas.teilr.repository.UserRepository;
+import frauas.teilr.repository.BillRepository;
+import frauas.teilr.repository.ExpenseSplitRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +22,8 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
+    private final BillRepository billRepository;
+    private final ExpenseSplitRepository expenseSplitRepository;
 
     /**
      * Create a new group. The creator becomes admin and is added as the first
@@ -81,6 +86,7 @@ public class GroupService {
      * @throws IllegalArgumentException if the group does not exist
      * @throws SecurityException        if the requester is not the admin
      */
+    @Transactional
     public void deleteGroup(Long groupId, Long requestedId) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("Group not found: " + groupId));
@@ -88,6 +94,12 @@ public class GroupService {
         if (!group.getAdminId().equals(requestedId)) {
             throw new SecurityException("Only the group admin can delete this group.");
         }
+        
+        // Clean up orphaned data related to this group
+        expenseSplitRepository.deleteByGroupId(groupId);
+        billRepository.deleteByGroupId(groupId);
+        groupMemberRepository.deleteByGroupId(groupId);
+        
         groupRepository.delete(group);
     }
 }

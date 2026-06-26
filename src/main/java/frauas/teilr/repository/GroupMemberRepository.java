@@ -28,4 +28,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     @Modifying
     @Transactional
     void deleteByGroupIdAndUserId(Long groupId, Long userId);
+
+    @Modifying
+    @Transactional
+    void deleteByGroupId(Long groupId);
 }
