@@ -3,20 +3,32 @@ package frauas.teilr.controller;
 import frauas.teilr.dto.BillCreateRequest;
 import frauas.teilr.dto.SettleUpRequest;
 import frauas.teilr.dto.SimplifiedDebtDTO;
+
 import frauas.teilr.entity.Bill;
 import frauas.teilr.service.ExpenseService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.List;
 
-@RestController
+@Controller
 @RequestMapping("/api/expenses")
 @CrossOrigin(origins = "*") // Cho phép Frontend gọi mà không bị lỗi CORS
 @RequiredArgsConstructor
 public class ExpenseController {
+
+    private static final String SETTLE_UP = "Settle Up";
 
     private final ExpenseService expenseService;
 
@@ -36,31 +48,24 @@ public class ExpenseController {
 
     // --- 3. API Tạo Hóa Đơn Chia Đều (Equal Split) ---
     @PostMapping("/bill")
-    public ResponseEntity<Bill> createBill(@RequestBody BillCreateRequest request) {
-        Bill newBill = expenseService.createEqualBill(
-                request.getGroupId(),
-                request.getCreatorId(),
-                request.getDescription(),
-                request.getTotalAmount(),
-                request.getParticipantIds(),
-                request.getParticipantNames()
-        );
-        return ResponseEntity.status(HttpStatus.CREATED).body(newBill);
+    public ResponseEntity<Bill> createBill(@RequestBody BillCreateRequest request, HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        request.setCreatorId(userId); // Enforce current user as creator
+        return ResponseEntity.status(HttpStatus.CREATED).body(expenseService.createEqualBill(request));
     }
 
     // --- 4. API Trả Nợ (Settle Up) ---
     @PostMapping("/settle")
-    public ResponseEntity<Bill> settleUp(@RequestBody SettleUpRequest request) {
-        // Tái sử dụng lại logic chia tiền. Con nợ (debtor) là người tạo bill trả tiền,
-        // Chủ nợ (creditor) là người duy nhất "hưởng" cái bill đó.
-        Bill settleBill = expenseService.createEqualBill(
-                request.getGroupId(),
-                request.getDebtorId(),
-                "Settle Up",
-                request.getAmount(),
-                List.of(request.getCreditorId()), // Biến thành 1 List chỉ chứa ID chủ nợ
-                "Settle Up Transaction"
-        );
-        return ResponseEntity.ok(settleBill);
+    public ResponseEntity<Bill> settleUp(@RequestBody SettleUpRequest request, HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        request.setDebtorId(userId); // Enforce current user as the one paying off the debt
+        return ResponseEntity.ok(expenseService.createEqualBill(
+                request.getGroupId(), request.getDebtorId(), SETTLE_UP,
+                request.getAmount(), List.of(request.getCreditorId()), SETTLE_UP
+        ));
     }
 }

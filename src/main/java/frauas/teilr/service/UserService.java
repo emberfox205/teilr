@@ -1,90 +1,82 @@
 package frauas.teilr.service;
 
-import frauas.teilr.dto.RegisterRequest;
 import frauas.teilr.entity.User;
 import frauas.teilr.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements UserDetailsService {
+public class UserService {
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-
-    private static final SecureRandom RANDOM = new SecureRandom();
-    private static final int MAX_ID_RETRIES = 20;
 
     /** Find a user by their 4-digit ID. */
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
     }
 
-    /**
-     * Register a new user. Generates a random 4-digit ID (0000–9999) and a
-     * verification token. The returned user is unverified until the token
-     * link is opened.
-     */
-    @Transactional
-    public User register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("An account with that email already exists.");
+    public User register(User user) {
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException("Username is required.");
+        }
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            throw new IllegalArgumentException("Email is required.");
+        }
+        if (user.getPasswordHash() == null || user.getPasswordHash().trim().isEmpty()) {
+            throw new IllegalArgumentException("Password is required.");
         }
 
-        User user = new User();
-        user.setId(generateUniqueId());
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setEmailVerified(false);
-        user.setVerificationToken(UUID.randomUUID().toString());
+        if (userRepository.count() >= 10000) {
+            throw new IllegalStateException("Maximum user capacity reached (10,000 users).");
+        }
+
+        user.setUsername(user.getUsername().trim());
+        user.setEmail(user.getEmail().trim());
+
+        // Fast Path: Try up to 3 random guesses (O(1) fast path for sparse database)
+        java.util.Random random = new java.util.Random();
+        Long generatedId = null;
+        for (int i = 0; i < 3; i++) {
+            Long guess = (long) random.nextInt(10000); // 0 to 9999
+            if (!userRepository.existsById(guess)) {
+                generatedId = guess;
+                break;
+            }
+        }
+
+        // Fallback Path: If database is very full, use a single native SQL query to find a gap
+        if (generatedId == null) {
+            if (!userRepository.existsById(0L)) {
+                generatedId = 0L;
+            } else {
+                generatedId = userRepository.findFirstAvailableId();
+                if (generatedId == null) {
+                    throw new IllegalStateException("Maximum user capacity reached (10,000 users).");
+                }
+            }
+        }
+        
+        user.setId(generatedId);
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email '" + user.getEmail() + "' is already taken.");
+        }
+        user.setPasswordHash(BCrypt.hashpw(user.getPasswordHash(), BCrypt.gensalt()));
         return userRepository.save(user);
     }
 
-    /**
-     * Confirm a user's email via the token sent to their inbox.
-     * Returns the verified user on success.
-     */
-    @Transactional
-    public Optional<User> confirmEmail(String token) {
-        return userRepository.findByVerificationToken(token).map(user -> {
-            user.setEmailVerified(true);
-            user.setVerificationToken(null);
-            return userRepository.save(user);
-        });
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("No account with that username."));
-
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPasswordHash())
-                .disabled(!user.isEmailVerified())
-                .authorities("ROLE_USER")
-                .build();
-    }
-
-    /** Generate a random unused 4-digit ID. Retries on rare collisions. */
-    private Long generateUniqueId() {
-        for (int i = 0; i < MAX_ID_RETRIES; i++) {
-            long candidate = RANDOM.nextInt(10_000);
-            if (!userRepository.existsById(candidate)) {
-                return candidate;
-            }
+    public Optional<User> authenticate(String identifier, String rawPassword) {
+        Optional<User> userOpt;
+        try {
+            Long id = Long.parseLong(identifier);
+            userOpt = userRepository.findById(id);
+        } catch (NumberFormatException e) {
+            userOpt = userRepository.findByEmail(identifier);
         }
-        throw new IllegalStateException("Could not allocate a free 4-digit user ID after " + MAX_ID_RETRIES + " tries.");
+        
+        return userOpt.filter(user -> BCrypt.checkpw(rawPassword, user.getPasswordHash()));
     }
 }

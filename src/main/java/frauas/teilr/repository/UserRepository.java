@@ -19,11 +19,17 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    /**
+     * Look up a user by their @username.
+     * JPA generates: SELECT * FROM users WHERE username = ?
+     */
     Optional<User> findByUsername(String username);
 
     Optional<User> findByEmail(String email);
 
-    Optional<User> findByVerificationToken(String verificationToken);
-
-    boolean existsByEmail(String email);
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT MIN(u1.id + 1) FROM users u1 LEFT JOIN users u2 ON u1.id + 1 = u2.id WHERE u2.id IS NULL AND u1.id < 9999",
+        nativeQuery = true
+    )
+    Long findFirstAvailableId();
 }

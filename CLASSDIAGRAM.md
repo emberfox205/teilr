@@ -1,4 +1,4 @@
-# Teilr — Class Diagram
+fu# Teilr — Class Diagram
 > ✅ = currently coded · 🔲 = planned (not yet implemented)
 
 ---
@@ -14,12 +14,14 @@ flowchart TB
         GC["GroupController ✅"]:::coded
         UC["UserController ✅"]:::coded
         EC["ExpenseController ✅"]:::coded
+        FC["FriendshipController ✅"]:::coded
     end
 
     subgraph SERVICE ["⚙️ Service Layer"]
         GS["GroupService ✅"]:::coded
         US["UserService ✅"]:::coded
         ES["ExpenseService ✅"]:::coded
+        FS["FriendshipService ✅"]:::coded
     end
 
     subgraph REPO ["🗄️ Repository Layer"]
@@ -28,7 +30,7 @@ flowchart TB
         UR["UserRepository ✅"]:::coded
         BR["BillRepository ✅"]:::coded
         ER["ExpenseSplitRepository ✅"]:::coded
-        FR["FriendshipRepository 🔲"]:::planned
+        FR["FriendshipRepository ✅"]:::coded
     end
 
     subgraph ENTITY ["📦 Entity Layer"]
@@ -37,12 +39,13 @@ flowchart TB
         GM["GroupMember ✅"]:::coded
         B["Bill ✅"]:::coded
         EX["ExpenseSplit ✅"]:::coded
-        F["Friendship 🔲"]:::planned
+        F["Friendship ✅"]:::coded
     end
 
     GC --> GS
     UC --> US
     EC --> ES
+    FC --> FS
 
     GS --> GR
     GS --> GMR
@@ -50,6 +53,8 @@ flowchart TB
     US --> UR
     ES --> BR
     ES --> ER
+    FS --> FR
+    FS --> UR
 
     GR -.->|returns| G
     GMR -.->|returns| GM
@@ -155,6 +160,7 @@ classDiagram
         <<Service>>
         - BillRepository billRepository
         - ExpenseSplitRepository expenseSplitRepository
+        + createEqualBill(request BillCreateRequest) Bill
         + createEqualBill(groupId, creatorId, desc, amount, participantIds, participantNames) Bill
         + getSimplifiedDebts(groupId) List~SimplifiedDebtDTO~
         + getBillsForGroup(groupId) List~Bill~
@@ -199,10 +205,21 @@ classDiagram
         + save(split ExpenseSplit) ExpenseSplit
     }
 
+    class FriendshipService {
+        <<Service>>
+        - FriendshipRepository friendshipRepository
+        - UserRepository userRepository
+        + sendRequest(requesterId, targetId) Friendship
+        + acceptRequest(friendshipId, userId) Friendship
+        + getFriends(userId) List~User~
+        + getPendingRequests(userId) List~Friendship~
+    }
+
     class FriendshipRepository {
-        <<planned>>
-        + findByUserId(userId) List~Friendship~
-        + save(friendship Friendship) Friendship
+        <<Repository>>
+        + findByUserIdAAndUserIdB(userIdA, userIdB) Optional~Friendship~
+        + findAcceptedByUserId(userId) List~Friendship~
+        + findByUserIdBAndStatus(userIdB, status) List~Friendship~
     }
 
     UserService --> UserRepository
@@ -211,6 +228,8 @@ classDiagram
     GroupService --> UserRepository
     ExpenseService --> BillRepository
     ExpenseService --> ExpenseSplitRepository
+    FriendshipService --> FriendshipRepository
+    FriendshipService --> UserRepository
 ```
 
 ---
@@ -232,9 +251,9 @@ classDiagram
         - GroupService groupService
         + GET /groups/new
         + POST /groups
-        + GET /groups userId Long
+        + GET /groups
         + POST /groups/groupId/members userId
-        + DELETE /groups/groupId requesterId
+        + DELETE /groups/groupId
     }
 
     class ExpenseController {
@@ -246,9 +265,19 @@ classDiagram
         + POST /api/expenses/settle
     }
 
+    class FriendshipController {
+        <<Controller - HTMX/REST>>
+        - FriendshipService friendshipService
+        + GET /api/friends
+        + GET /api/friends/pending
+        + POST /api/friends/request targetId
+        + POST /api/friends/accept friendshipId
+    }
+
     UserController --> UserService
     GroupController --> GroupService
     ExpenseController --> ExpenseService
+    FriendshipController --> FriendshipService
 ```
 
 ---
@@ -279,6 +308,12 @@ classDiagram
         - Long debtorId
         - Long creditorId
         - BigDecimal amount
+    }
+
+    class BalanceCalc {
+        <<Internal DTO - OSIV Safe>>
+        - Long userId
+        - BigDecimal balance
     }
 
     ExpenseController ..> BillCreateRequest : receives
