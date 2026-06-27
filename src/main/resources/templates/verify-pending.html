@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/auth-frame :: head('teilr · check your inbox')}"></head>
+<body>
+
+<div th:replace="~{fragments/auth-frame :: desktop-block}"></div>
+
+<main class="smartphone-only min-h-screen w-full flex-col justify-between px-6 py-10"
+      style="max-width: 480px; margin: 0 auto;">
+
+    <header class="flex items-center justify-between">
+        <div class="teilr-mark">
+            <span class="dot"></span>
+            <span>teilr</span>
+        </div>
+        <span class="teilr-chip" style="color: var(--teilr-coral); background: rgba(226,106,74,0.10);">pending</span>
+    </header>
+
+    <section class="mt-12 mb-8">
+        <div class="grain relative inline-block mb-6">
+            <div class="display-font text-7xl leading-none" style="color: var(--teilr-teal);">
+                #<span th:text="${userId}">0000</span>
+            </div>
+        </div>
+        <p class="teilr-label mb-3">that's your teilr ID</p>
+        <h1 class="display-font text-4xl leading-[1.05] mb-4">
+            now <em>confirm</em> your email.
+        </h1>
+        <p class="text-sm" style="color: var(--teilr-mute);">
+            We sent a link to <span style="color: var(--teilr-ink); font-weight: 600;" th:text="${email}">you@domain.com</span>.
+            Open it on any device to activate the account, then come back to sign in.
+        </p>
+    </section>
+
+    <div class="rounded-3xl p-5 mb-8"
+         style="background: rgba(15,122,107,0.06); border: 1px dashed rgba(15,122,107,0.25);">
+        <p class="text-xs uppercase tracking-[0.18em] mb-2" style="color: var(--teilr-teal);">tip</p>
+        <p class="text-sm leading-relaxed">
+            Can't find it? Check spam, or peek at the server log — in dev mode
+            the link is printed there too.
+        </p>
+    </div>
+
+    <footer class="mt-auto pt-6">
+        <a th:href="@{/auth/login}" class="teilr-btn">
+            back to sign in
+            <span aria-hidden="true">→</span>
+        </a>
+    </footer>
+</main>
+
+</body>
+</html>

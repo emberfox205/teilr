@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/auth-frame :: head('teilr · verification')}"></head>
+<body>
+
+<div th:replace="~{fragments/auth-frame :: desktop-block}"></div>
+
+<main class="smartphone-only min-h-screen w-full flex-col justify-between px-6 py-10"
+      style="max-width: 480px; margin: 0 auto;">
+
+    <header class="flex items-center justify-between">
+        <div class="teilr-mark">
+            <span class="dot"></span>
+            <span>teilr</span>
+        </div>
+    </header>
+
+    <!-- Success state -->
+    <section th:if="${errorMessage == null}" class="mt-12 mb-8">
+        <span class="teilr-chip mb-6">verified</span>
+        <h1 class="display-font text-5xl leading-[1.0] mb-4">
+            you're <em style="color: var(--teilr-teal);">in</em>,<br>
+            <span th:text="${username}">friend</span>.
+        </h1>
+        <p class="text-sm mb-6" style="color: var(--teilr-mute);">
+            Your account is confirmed. Your 4-digit teilr ID is the one
+            your friends will type to add you to a group.
+        </p>
+        <div class="rounded-3xl p-6 text-center"
+             style="background: var(--teilr-ink); color: var(--teilr-cream);">
+            <p class="text-xs uppercase tracking-[0.22em] mb-2" style="opacity:0.6;">your id</p>
+            <p class="display-font text-6xl leading-none">
+                #<span th:text="${userId}">0000</span>
+            </p>
+        </div>
+    </section>
+
+    <!-- Failure state -->
+    <section th:if="${errorMessage != null}" class="mt-12 mb-8">
+        <span class="teilr-chip" style="color: var(--teilr-coral); background: rgba(226,106,74,0.10);">link broken</span>
+        <h1 class="display-font text-5xl leading-[1.0] mt-6 mb-4">
+            that link <em style="color: var(--teilr-coral);">didn't take.</em>
+        </h1>
+        <p class="text-sm" style="color: var(--teilr-mute);" th:text="${errorMessage}">error</p>
+    </section>
+
+    <footer class="mt-auto pt-10">
+        <a th:href="@{/auth/login}" class="teilr-btn">
+            <span th:text="${errorMessage == null} ? 'sign in now' : 'back to sign in'">sign in</span>
+            <span aria-hidden="true">→</span>
+        </a>
+    </footer>
+</main>
+
+</body>
+</html>

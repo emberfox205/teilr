@@ -19,9 +19,11 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    /**
-     * Look up a user by their @username.
-     * JPA generates: SELECT * FROM users WHERE username = ?
-     */
     Optional<User> findByUsername(String username);
+
+    Optional<User> findByEmail(String email);
+
+    Optional<User> findByVerificationToken(String verificationToken);
+
+    boolean existsByEmail(String email);
 }

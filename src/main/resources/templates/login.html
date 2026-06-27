@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/auth-frame :: head('teilr · sign in')}"></head>
+<body>
+
+<div th:replace="~{fragments/auth-frame :: desktop-block}"></div>
+
+<main class="smartphone-only min-h-screen w-full flex-col justify-between px-6 py-10"
+      style="max-width: 480px; margin: 0 auto;">
+
+    <header class="flex items-center justify-between">
+        <div class="teilr-mark">
+            <span class="dot"></span>
+            <span>teilr</span>
+        </div>
+        <span class="teilr-chip">v0 · beta</span>
+    </header>
+
+    <section class="mt-10 mb-10">
+        <p class="teilr-label mb-3">welcome back</p>
+        <h1 class="display-font text-5xl leading-[1.0] mb-3">
+            sign in,<br>
+            <em style="color: var(--teilr-teal);">split fair.</em>
+        </h1>
+        <p class="text-sm" style="color: var(--teilr-mute);">
+            Pick up where you left off — the receipts are still waiting.
+        </p>
+    </section>
+
+    <div th:if="${errorMessage}" role="alert"
+         class="mb-5 px-4 py-3 text-sm rounded-2xl"
+         style="background: rgba(226,106,74,0.12); color: #8a2e16; border: 1px solid rgba(226,106,74,0.3);"
+         th:text="${errorMessage}">error</div>
+
+    <div th:if="${infoMessage}" role="status"
+         class="mb-5 px-4 py-3 text-sm rounded-2xl"
+         style="background: rgba(15,122,107,0.10); color: #0a4f45; border: 1px solid rgba(15,122,107,0.3);"
+         th:text="${infoMessage}">info</div>
+
+    <form th:action="@{/auth/login}" method="post" class="flex flex-col gap-7">
+
+        <label class="flex flex-col gap-2">
+            <span class="teilr-label">username</span>
+            <input class="teilr-input" type="text" name="username" autocomplete="username"
+                   placeholder="@yourhandle" required autofocus>
+        </label>
+
+        <label class="flex flex-col gap-2">
+            <span class="teilr-label">password</span>
+            <input class="teilr-input" type="password" name="password" autocomplete="current-password"
+                   placeholder="••••••••" required>
+        </label>
+
+        <button type="submit" class="teilr-btn mt-2">
+            enter teilr
+            <span aria-hidden="true">→</span>
+        </button>
+    </form>
+
+    <footer class="mt-auto pt-10 text-center text-sm" style="color: var(--teilr-mute);">
+        new here?
+        <a th:href="@{/auth/register}" class="teilr-link ml-1">make an account</a>
+    </footer>
+</main>
+
+</body>
+</html>
