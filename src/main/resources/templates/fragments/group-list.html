@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Renders the list of groups a user belongs to. -->
+<div th:fragment="groupListContent">
+    <div th:if="${groups == null or groups.isEmpty()}"
+         class="rounded-box border border-dashed border-base-300 p-6 text-center text-sm text-base-content/60">
+        No groups yet. Tap <span class="font-medium">New group</span> to create one.
+    </div>
+    <div class="flex flex-col gap-3" th:unless="${groups == null or groups.isEmpty()}">
+        <div th:each="g : ${groups}"
+             th:replace="~{fragments/group-card :: groupCardContent(${g})}"></div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -63,4 +63,21 @@ public class FriendshipService {
     public List<Friendship> getPendingRequests(Long userId) {
         return friendshipRepository.findByUserIdBAndStatus(userId, "PENDING");
     }
+
+    /**
+     * True if the two users have an ACCEPTED friendship (in either direction).
+     * A user counts as "friends" with themselves so self-membership is allowed.
+     */
+    public boolean areFriends(Long a, Long b) {
+        if (a == null || b == null) {
+            return false;
+        }
+        if (a.equals(b)) {
+            return true;
+        }
+        return friendshipRepository.findByUserIdAAndUserIdB(a, b)
+                        .filter(f -> "ACCEPTED".equals(f.getStatus())).isPresent()
+                || friendshipRepository.findByUserIdAAndUserIdB(b, a)
+                        .filter(f -> "ACCEPTED".equals(f.getStatus())).isPresent();
+    }
 }

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Incoming friend requests with an accept action. -->
+<div th:fragment="requestListContent">
+    <div th:unless="${requests.isEmpty()}" class="mb-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-2">Requests</p>
+        <ul class="list bg-base-100 rounded-box border border-base-300">
+            <li th:each="r : ${requests}" class="list-row items-center">
+                <div class="avatar avatar-placeholder">
+                    <div class="bg-primary/10 text-primary w-8 rounded-full">
+                        <span th:text="${#strings.substring(names.getOrDefault(r.userIdA, '?'),0,1)}">A</span>
+                    </div>
+                </div>
+                <span class="list-col-grow truncate"
+                      th:text="${names.getOrDefault(r.userIdA, '#' + r.userIdA)}">name</span>
+                <button type="button" class="btn btn-sm btn-primary"
+                        th:hx-post="@{'/api/friends/accept?friendshipId=' + ${r.id}}"
+                        hx-swap="none"
+                        hx-on:htmx:after-request="if(event.detail.successful){htmx.trigger(document.body,'refreshFriends');}">
+                    <iconify-icon icon="carbon:checkmark" width="16"></iconify-icon> Accept
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>

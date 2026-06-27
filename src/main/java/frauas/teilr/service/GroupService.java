@@ -8,6 +8,7 @@ import frauas.teilr.repository.GroupRepository;
 import frauas.teilr.repository.UserRepository;
 import frauas.teilr.repository.BillRepository;
 import frauas.teilr.repository.ExpenseSplitRepository;
+import frauas.teilr.repository.SettlementRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,8 @@ public class GroupService {
     private final UserRepository userRepository;
     private final BillRepository billRepository;
     private final ExpenseSplitRepository expenseSplitRepository;
+    private final SettlementRepository settlementRepository;
+    private final FriendshipService friendshipService;
 
     /**
      * Create a new group. The creator becomes admin and is added as the first
@@ -62,6 +65,10 @@ public class GroupService {
         }
         if (!userRepository.existsById(userId)) {
             throw new IllegalArgumentException("User with ID " + userId + " does not exist.");
+        }
+        // You can only add people you are friends with (the admin adding themselves is fine).
+        if (!friendshipService.areFriends(requesterId, userId)) {
+            throw new SecurityException("You can only add friends to a group.");
         }
 
         if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
@@ -106,6 +113,7 @@ public class GroupService {
         }
         
         // Clean up orphaned data related to this group
+        settlementRepository.deleteByGroupId(groupId);
         expenseSplitRepository.deleteByGroupId(groupId);
         billRepository.deleteByGroupId(groupId);
         groupMemberRepository.deleteByGroupId(groupId);

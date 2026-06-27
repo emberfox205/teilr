@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="sceneContent">
+
+    <!-- Create group (primary action) -->
+    <section class="mb-6">
+        <h1 class="text-2xl font-semibold mb-3">Split bills with your groups</h1>
+        <button type="button" class="btn btn-primary btn-block"
+                hx-get="/api/groups/new" hx-target="#sheet" hx-swap="innerHTML">
+            <iconify-icon icon="carbon:add" width="20"></iconify-icon> New group
+        </button>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Groups -->
+    <section class="mb-8">
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-3">Your groups</h2>
+        <div id="group-list" class="flex flex-col gap-3"
+             hx-get="/api/groups"
+             hx-trigger="load, refreshGroups from:body"
+             hx-target="this" hx-swap="innerHTML">
+            <span class="loading loading-spinner loading-sm"></span>
+        </div>
+    </section>
+
+    <!-- Friends -->
+    <section>
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-3">Friends</h2>
+
+        <div class="card card-border bg-base-100 mb-4">
+            <div class="card-body p-4 gap-2">
+                <label class="text-sm font-medium">Add a friend by ID</label>
+                <input class="input w-full" type="number" min="0" max="9999" name="userId"
+                       placeholder="0000"
+                       hx-get="/api/users/search"
+                       hx-trigger="input changed delay:350ms"
+                       hx-target="#friend-search-result"
+                       hx-vals='{"context":"friend"}'
+                       hx-include="this">
+                <div id="friend-search-result"></div>
+            </div>
+        </div>
+
+        <div id="pending-requests"
+             hx-get="/api/friends/pending"
+             hx-trigger="load, refreshFriends from:body"
+             hx-target="this" hx-swap="innerHTML"></div>
+
+        <div id="friend-list"
+             hx-get="/api/friends"
+             hx-trigger="load, refreshFriends from:body"
+             hx-target="this" hx-swap="innerHTML"></div>
+    </section>
+
+    <!-- bottom-sheet mount for the group-creation form -->
+    <div id="sheet"></div>
+</div>
+
+</body>
+</html>

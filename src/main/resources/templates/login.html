@@ -1,65 +1,57 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/auth-frame :: head('teilr · sign in')}"></head>
+<head th:replace="~{fragments/auth-frame :: head('teilr · Sign in')}"></head>
 <body>
 
 <div th:replace="~{fragments/auth-frame :: desktop-block}"></div>
 
-<main class="smartphone-only min-h-screen w-full flex-col justify-between px-6 py-10"
-      style="max-width: 480px; margin: 0 auto;">
+<main class="smartphone-only min-h-screen w-full flex-col justify-between gap-8 px-6 py-10"
+      style="max-width: 600px; margin: 0 auto;">
 
     <header class="flex items-center justify-between">
-        <div class="teilr-mark">
-            <span class="dot"></span>
+        <div class="flex items-center gap-2 text-xl font-semibold">
+            <iconify-icon icon="carbon:money" width="20" class="text-primary"></iconify-icon>
             <span>teilr</span>
         </div>
-        <span class="teilr-chip">v0 · beta</span>
+        <span class="badge badge-soft">Beta</span>
     </header>
 
-    <section class="mt-10 mb-10">
-        <p class="teilr-label mb-3">welcome back</p>
-        <h1 class="display-font text-5xl leading-[1.0] mb-3">
-            sign in,<br>
-            <em style="color: var(--teilr-teal);">split fair.</em>
-        </h1>
-        <p class="text-sm" style="color: var(--teilr-mute);">
-            Pick up where you left off — the receipts are still waiting.
-        </p>
+    <section>
+        <h1 class="text-3xl font-semibold mb-2">Sign in</h1>
+        <p class="text-base-content/60">Enter your details to continue.</p>
     </section>
 
-    <div th:if="${errorMessage}" role="alert"
-         class="mb-5 px-4 py-3 text-sm rounded-2xl"
-         style="background: rgba(226,106,74,0.12); color: #8a2e16; border: 1px solid rgba(226,106,74,0.3);"
-         th:text="${errorMessage}">error</div>
+    <div th:if="${errorMessage}" role="alert" class="alert alert-error alert-soft">
+        <iconify-icon icon="carbon:warning" width="20"></iconify-icon>
+        <span th:text="${errorMessage}">error</span>
+    </div>
+    <div th:if="${infoMessage}" role="status" class="alert alert-info alert-soft">
+        <iconify-icon icon="carbon:information" width="20"></iconify-icon>
+        <span th:text="${infoMessage}">info</span>
+    </div>
 
-    <div th:if="${infoMessage}" role="status"
-         class="mb-5 px-4 py-3 text-sm rounded-2xl"
-         style="background: rgba(15,122,107,0.10); color: #0a4f45; border: 1px solid rgba(15,122,107,0.3);"
-         th:text="${infoMessage}">info</div>
+    <form th:action="@{/auth/login}" method="post" class="flex flex-col gap-4">
+        <fieldset class="fieldset">
+            <legend class="fieldset-legend">Email or 4-digit ID</legend>
+            <input class="input w-full" type="text" name="username" autocomplete="username"
+                   placeholder="you@email.com or 0000" required autofocus>
+        </fieldset>
 
-    <form th:action="@{/auth/login}" method="post" class="flex flex-col gap-7">
+        <fieldset class="fieldset">
+            <legend class="fieldset-legend">Password</legend>
+            <input class="input w-full" type="password" name="password" autocomplete="current-password"
+                   placeholder="Password" required>
+        </fieldset>
 
-        <label class="flex flex-col gap-2">
-            <span class="teilr-label">username</span>
-            <input class="teilr-input" type="text" name="username" autocomplete="username"
-                   placeholder="@yourhandle" required autofocus>
-        </label>
-
-        <label class="flex flex-col gap-2">
-            <span class="teilr-label">password</span>
-            <input class="teilr-input" type="password" name="password" autocomplete="current-password"
-                   placeholder="••••••••" required>
-        </label>
-
-        <button type="submit" class="teilr-btn mt-2">
-            enter teilr
-            <span aria-hidden="true">→</span>
+        <button type="submit" class="btn btn-primary btn-block mt-2">
+            Sign in
+            <iconify-icon icon="carbon:arrow-right" width="20"></iconify-icon>
         </button>
     </form>
 
-    <footer class="mt-auto pt-10 text-center text-sm" style="color: var(--teilr-mute);">
-        new here?
-        <a th:href="@{/auth/register}" class="teilr-link ml-1">make an account</a>
+    <footer class="mt-auto text-center text-sm text-base-content/60">
+        Don't have an account?
+        <a th:href="@{/auth/register}" class="link link-primary ml-1">Create one</a>
     </footer>
 </main>
 

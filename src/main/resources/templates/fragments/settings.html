@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Minimal settings scene (kept so the /ui/settings route resolves). -->
+<div th:fragment="sceneContent">
+    <h1 class="display-font text-3xl mb-6">Settings</h1>
+    <div class="teilr-card mb-4">
+        <p class="teilr-label">About</p>
+        <p class="text-sm mt-1">teilr — split bills with your groups.</p>
+        <p class="text-xs muted mt-1">Beta</p>
+    </div>
+    <form th:action="@{/auth/logout}" method="post">
+        <button type="submit" class="teilr-btn teilr-btn-ghost">
+            <iconify-icon icon="carbon:logout" width="18"></iconify-icon> Log out
+        </button>
+    </form>
+</div>
+
+</body>
+</html>
