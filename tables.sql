@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS tabled;
+CREATE DATABASE IF NOT EXISTS tables;
 USE tables;
 SET time_zone = '+00:00';
 
@@ -89,7 +89,7 @@ CREATE TABLE messages (
     group_id        BIGINT       NOT NULL,
     bill_id         BIGINT       NOT NULL,
     message_type    VARCHAR(20)  NOT NULL DEFAULT 'TEXT',
-    content         TEXT         NULL,
+    content         TEXT         NOT NULL,
     created_at      TIMESTAMP	 NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (sender_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
