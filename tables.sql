@@ -87,15 +87,15 @@ CREATE TABLE messages (
     sender_id       BIGINT       NOT NULL,
     receiver_id    	BIGINT       NOT NULL,
     group_id        BIGINT       NOT NULL,
-    bill_id         INT       	 NULL,
+    bill_id         BIGINT       NOT NULL,
     message_type    VARCHAR(20)  NOT NULL DEFAULT 'TEXT',
     content         TEXT         NULL,
     created_at      TIMESTAMP	 NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (sender_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    FOREIGN KEY (recipient_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY (group_id) REFERENCES user_groups(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    FOREIGN KEY (bill_id) REFERENCES bills(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    FOREIGN KEY (bill_id) REFERENCES bills(id) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT valid_messages_type CHECK (
         message_type IN ('TEXT', 'BILL')
     )
