@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Read-only profile. ${currentUser} is supplied by GlobalControllerAdvice. -->
+<div th:fragment="sceneContent">
+
+    <section class="flex flex-col items-center text-center mt-4 mb-8">
+        <span class="teilr-avatar" style="width:5rem;height:5rem;font-size:2rem;"
+              th:text="${currentUser != null ? #strings.substring(currentUser.username,0,1) : '?'}">A</span>
+        <h1 class="display-font text-3xl mt-4" th:text="${currentUser != null ? currentUser.username : 'unknown'}">name</h1>
+        <p class="teilr-chip mt-2"
+           th:text="'#' + ${currentUser != null ? #numbers.formatInteger(currentUser.id,4) : '----'}">#0000</p>
+    </section>
+
+    <section class="flex flex-col gap-3 mb-8">
+        <div class="teilr-card">
+            <p class="teilr-label">Your 4-digit ID</p>
+            <p class="text-lg font-semibold mt-1"
+               th:text="${currentUser != null ? #numbers.formatInteger(currentUser.id,4) : '----'}">0000</p>
+            <p class="text-xs muted mt-1">Share this so others can add you.</p>
+        </div>
+        <div class="teilr-card">
+            <p class="teilr-label">Username</p>
+            <p class="text-lg font-semibold mt-1" th:text="${currentUser != null ? currentUser.username : ''}">name</p>
+        </div>
+        <div class="teilr-card">
+            <p class="teilr-label">Email</p>
+            <p class="text-lg font-semibold mt-1 break-all" th:text="${currentUser != null ? currentUser.email : ''}">email</p>
+        </div>
+    </section>
+
+    <!-- Logout is a plain form so Spring auto-injects CSRF and does a full redirect. -->
+    <form th:action="@{/auth/logout}" method="post">
+        <button type="submit" class="teilr-btn teilr-btn-ghost">
+            <iconify-icon icon="carbon:logout" width="18"></iconify-icon> Log out
+        </button>
+    </form>
+</div>
+
+</body>
+</html>

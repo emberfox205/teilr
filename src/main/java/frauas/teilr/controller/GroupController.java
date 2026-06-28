@@ -3,6 +3,7 @@ package frauas.teilr.controller;
 import frauas.teilr.entity.Group;
 import frauas.teilr.entity.User;
 import frauas.teilr.service.GroupService;
+import frauas.teilr.service.GroupViewService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,6 +29,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class  GroupController {
     private final GroupService groupService;
+    private final GroupViewService groupViewService;
 
     /**
      * HTMX: show the group creation form.
@@ -48,15 +50,14 @@ public class  GroupController {
                               HttpSession session,
                               Model model) {
         Long adminId = (Long) session.getAttribute("userId");
-        if (adminId == null) return "redirect:/ui/login";
+        if (adminId == null) return "redirect:/auth/login";
 
         List<Long> members = (memberIds != null) ? memberIds : List.of();
-        Group created = groupService.createGroup(name, adminId, members);
-        List<User> memberList = groupService.getMembersOfGroup(created.getId());
-        
-        model.addAttribute("group", created);
-        model.addAttribute("members", memberList);
-        return "fragments/group-card :: groupCardContent";
+        groupService.createGroup(name, adminId, members);
+
+        // Re-render the user's whole group list so the new group appears immediately.
+        model.addAttribute("groups", groupService.getGroupsForUser(adminId));
+        return "fragments/group-list :: groupListContent";
     }
 
     /**
@@ -66,7 +67,7 @@ public class  GroupController {
     @GetMapping
     public String listGroupForUser(HttpSession session, Model model) {
         Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) return "redirect:/ui/login";
+        if (userId == null) return "redirect:/auth/login";
 
         List<Group> groups = groupService.getGroupsForUser(userId);
         model.addAttribute("groups", groups);
@@ -74,8 +75,22 @@ public class  GroupController {
     }
 
     /**
-     * HTMX: add a member to a group.
-     * Called by: hx-post="/groups/{groupId}/members"
+     * HTMX: open the full group-detail scene (members, who-owes-whom, bills,
+     * settlement actions, activity log). Swapped into #app-scene.
+     * Called by: hx-get="/api/groups/{groupId}/view"
+     */
+    @GetMapping("/{groupId}/view")
+    public String viewGroup(@PathVariable Long groupId, HttpSession session, Model model) {
+        Long requesterId = (Long) session.getAttribute("userId");
+        if (requesterId == null) return "redirect:/auth/login";
+
+        model.addAllAttributes(groupViewService.build(groupId, requesterId));
+        return "fragments/group-detail :: sceneContent";
+    }
+
+    /**
+     * HTMX: add a member to a group (admin only) and re-render the group-detail scene.
+     * Called by: hx-post="/api/groups/{groupId}/members?userId={id}"
      */
     @PostMapping("/{groupId}/members")
     public String addMember(@PathVariable Long groupId,
@@ -83,12 +98,11 @@ public class  GroupController {
                             HttpSession session,
                             Model model) {
         Long requesterId = (Long) session.getAttribute("userId");
-        if (requesterId == null) return "redirect:/ui/login";
+        if (requesterId == null) return "redirect:/auth/login";
 
         groupService.addMember(groupId, userId, requesterId);
-        model.addAttribute("groupId", groupId);
-        model.addAttribute("members", groupService.getMembersOfGroup(groupId));
-        return "fragments/member-list :: memberListContent";
+        model.addAllAttributes(groupViewService.build(groupId, requesterId));
+        return "fragments/group-detail :: sceneContent";
     }
 
     /**
