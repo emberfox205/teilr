@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS tables;
-USE tables;
+CREATE DATABASE IF NOT EXISTS teilr;
+USE teilr;
 SET time_zone = '+00:00';
 
 CREATE TABLE users (
