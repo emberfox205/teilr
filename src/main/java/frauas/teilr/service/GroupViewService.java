@@ -28,6 +28,7 @@ public class GroupViewService {
     private final GroupService groupService;
     private final ExpenseService expenseService;
     private final GroupMemberRepository groupMemberRepository;
+    private final FriendshipService friendshipService;
 
     /**
      * @param groupId     the group to render
@@ -54,6 +55,17 @@ public class GroupViewService {
         List<SimplifiedDebtDTO> debts = expenseService.getSimplifiedDebts(groupId);
         List<Settlement> activity = expenseService.getActivity(groupId);
 
+        boolean isAdmin = group.getAdminId() != null && group.getAdminId().equals(requesterId);
+
+        // For the admin: friends who aren't already in the group (only friends can be added).
+        List<User> addableFriends = List.of();
+        if (isAdmin) {
+            java.util.Set<Long> memberIds = members.stream().map(User::getId).collect(Collectors.toSet());
+            addableFriends = friendshipService.getFriends(requesterId).stream()
+                    .filter(f -> !memberIds.contains(f.getId()))
+                    .toList();
+        }
+
         Map<String, Object> model = new LinkedHashMap<>();
         model.put("group", group);
         model.put("members", members);
@@ -61,7 +73,8 @@ public class GroupViewService {
         model.put("bills", bills);
         model.put("debts", debts);
         model.put("activity", activity);
-        model.put("isAdmin", group.getAdminId() != null && group.getAdminId().equals(requesterId));
+        model.put("isAdmin", isAdmin);
+        model.put("addableFriends", addableFriends);
         return model;
     }
 }
