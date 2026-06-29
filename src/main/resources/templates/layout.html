@@ -1,10 +1,68 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/auth-frame :: head('teilr')}"></head>
 <body>
+
+<!-- Shown on non-smartphone widths -->
+<div th:replace="~{fragments/auth-frame :: desktop-block}"></div>
+
+<div class="smartphone-only app-shell bg-base-100">
+
+    <header class="navbar bg-base-200 sticky top-0 z-20 min-h-12 px-4">
+        <div class="navbar-start gap-2 text-lg font-semibold">
+            <iconify-icon icon="carbon:money" width="20" class="text-primary"></iconify-icon>
+            <span>teilr</span>
+        </div>
+        <div class="navbar-end gap-2" th:if="${currentUser}">
+            <span class="text-sm" th:text="${currentUser.username}">name</span>
+            <div class="avatar avatar-placeholder">
+                <div class="bg-neutral text-neutral-content w-8 rounded-full">
+                    <span th:text="${#strings.substring(currentUser.username, 0, 1)}">A</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Active scene; swapped by the dock + in-scene links -->
+    <main id="app-scene" class="app-scene">
+        <div th:replace="~{__${initialView}__}">scene</div>
+    </main>
+
+    <nav class="dock">
+        <button type="button" class="dock-active" data-nav="home"
+                hx-get="/ui/home" hx-target="#app-scene" hx-swap="innerHTML">
+            <iconify-icon icon="carbon:home" width="22"></iconify-icon>
+            <span class="dock-label">Home</span>
+        </button>
+        <button type="button" data-nav="profile"
+                hx-get="/ui/profile" hx-target="#app-scene" hx-swap="innerHTML">
+            <iconify-icon icon="carbon:user" width="22"></iconify-icon>
+            <span class="dock-label">Profile</span>
+        </button>
+    </nav>
+</div>
+
+<!-- Attach the CSRF token to every HTMX request (forms with th:action get it
+     auto-injected by Spring, but hx-post/hx-delete do not). -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var csrfHeader = /*[[${_csrf != null ? _csrf.headerName : ''}]]*/ '';
+    var csrfToken  = /*[[${_csrf != null ? _csrf.token : ''}]]*/ '';
+    document.body.addEventListener('htmx:configRequest', function (e) {
+        if (csrfHeader) { e.detail.headers[csrfHeader] = csrfToken; }
+    });
+    /*]]>*/
+</script>
+
+<script th:inline="none">
+    // Highlight the tapped dock item.
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.dock button');
+        if (!btn) return;
+        document.querySelectorAll('.dock button').forEach(function (b) { b.classList.remove('dock-active'); });
+        btn.classList.add('dock-active');
+    });
+</script>
 
 </body>
 </html>

@@ -1,0 +1,33 @@
+/* ============================================================
+   teilr — minimal scaffolding on top of daisyUI.
+   Component styling comes from daisyUI classes in the templates;
+   this file only handles the mobile-only gate, the centered phone
+   shell, and a couple of small layout helpers.
+   ============================================================ */
+
+/* mobile-only gate (triggers up to 600px wide) */
+.smartphone-only { display: flex; }
+.desktop-block   { display: none; }
+@media (min-width: 601px) {
+    .smartphone-only { display: none !important; }
+    .desktop-block   { display: flex !important; }
+}
+
+/* centered phone-width app shell */
+.app-shell {
+    max-width: 600px;
+    margin: 0 auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+.app-scene { flex: 1; padding: 1rem; padding-bottom: 5.5rem; }
+
+/* keep the fixed bottom dock aligned with the centered shell */
+.dock { max-width: 600px; margin-inline: auto; }
+
+/* small heading helper */
+.display-font { font-weight: 600; letter-spacing: -0.01em; }
+
+iconify-icon { display: inline-flex; vertical-align: middle; }

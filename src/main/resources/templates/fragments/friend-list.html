@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Accepted friends. Two render modes via ${selectable}:
+    false → plain list (home)
+    true  → memberIds checkboxes (group-creation form)
+-->
+<div th:fragment="friendListContent">
+
+    <!-- selectable: checkboxes for the group form -->
+    <div th:if="${selectable}">
+        <p th:if="${friends.isEmpty()}" class="text-xs text-base-content/60">No friends yet. Add one by ID from Home.</p>
+        <ul class="list bg-base-100 rounded-box border border-base-300" th:unless="${friends.isEmpty()}">
+            <li th:each="f : ${friends}" class="list-row items-center">
+                <input type="checkbox" class="checkbox checkbox-sm" name="memberIds" th:value="${f.id}" form="group-form">
+                <div class="avatar avatar-placeholder">
+                    <div class="bg-base-300 text-base-content w-8 rounded-full">
+                        <span th:text="${#strings.substring(f.username,0,1)}">A</span>
+                    </div>
+                </div>
+                <span class="list-col-grow truncate" th:text="${f.username}">name</span>
+                <span class="text-xs text-base-content/50" th:text="'#' + ${#numbers.formatInteger(f.id,4)}">#0000</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- plain list for home -->
+    <div th:unless="${selectable}">
+        <p th:if="${friends.isEmpty()}" class="text-xs text-base-content/60">No friends yet.</p>
+        <ul class="list bg-base-100 rounded-box border border-base-300" th:unless="${friends.isEmpty()}">
+            <li th:each="f : ${friends}" class="list-row items-center">
+                <div class="avatar avatar-placeholder">
+                    <div class="bg-base-300 text-base-content w-8 rounded-full">
+                        <span th:text="${#strings.substring(f.username,0,1)}">A</span>
+                    </div>
+                </div>
+                <span class="truncate" th:text="${f.username}">name</span>
+                <span class="text-xs text-base-content/50" th:text="'#' + ${#numbers.formatInteger(f.id,4)}">#0000</span>
+            </li>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>

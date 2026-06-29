@@ -8,9 +8,7 @@ src/main/java/frauas/teilr/ClassGenerate.md
 
 ### Ponytail ###
 /.agents
-ponytail.md
-tailwind.config.js
-
+/.ponytail
 
 ### STS ###
 .apt_generated

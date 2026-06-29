@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/auth-frame :: head('teilr · Check your inbox')}"></head>
+<body>
+
+<div th:replace="~{fragments/auth-frame :: desktop-block}"></div>
+
+<main class="smartphone-only min-h-screen w-full flex-col justify-between gap-8 px-6 py-10"
+      style="max-width: 600px; margin: 0 auto;">
+
+    <header class="flex items-center justify-between">
+        <div class="flex items-center gap-2 text-xl font-semibold">
+            <iconify-icon icon="carbon:money" width="20" class="text-primary"></iconify-icon>
+            <span>teilr</span>
+        </div>
+        <span class="badge badge-soft">Pending</span>
+    </header>
+
+    <section>
+        <p class="text-base-content/60 mb-1">Your 4-digit ID</p>
+        <p class="text-6xl font-bold text-primary mb-6">#<span th:text="${userId}">0000</span></p>
+        <h1 class="text-2xl font-semibold mb-2">Confirm your email</h1>
+        <p class="text-base-content/70">
+            We sent a link to <span class="font-medium text-base-content" th:text="${email}">you@email.com</span>.
+            Open it to activate your account, then sign in.
+        </p>
+    </section>
+
+    <div role="alert" class="alert alert-info alert-soft">
+        <iconify-icon icon="carbon:information" width="20"></iconify-icon>
+        <span>Can't find it? Check spam. In development the link is also printed to the server log.</span>
+    </div>
+
+    <footer class="mt-auto">
+        <a th:href="@{/auth/login}" class="btn btn-primary btn-block">
+            Back to sign in
+            <iconify-icon icon="carbon:arrow-right" width="20"></iconify-icon>
+        </a>
+    </footer>
+</main>
+
+</body>
+</html>

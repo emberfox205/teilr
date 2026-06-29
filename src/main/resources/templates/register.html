@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/auth-frame :: head('teilr · Create account')}"></head>
+<body>
+
+<div th:replace="~{fragments/auth-frame :: desktop-block}"></div>
+
+<main class="smartphone-only min-h-screen w-full flex-col justify-between gap-8 px-6 py-10"
+      style="max-width: 600px; margin: 0 auto;">
+
+    <header class="flex items-center justify-between">
+        <div class="flex items-center gap-2 text-xl font-semibold">
+            <iconify-icon icon="carbon:money" width="20" class="text-primary"></iconify-icon>
+            <span>teilr</span>
+        </div>
+        <a th:href="@{/auth/login}" class="link link-primary text-sm">Sign in</a>
+    </header>
+
+    <section>
+        <h1 class="text-3xl font-semibold mb-2">Create account</h1>
+        <p class="text-base-content/60">
+            You will get a 4-digit ID so others can add you.
+        </p>
+    </section>
+
+    <div th:if="${errorMessage}" role="alert" class="alert alert-error alert-soft">
+        <iconify-icon icon="carbon:warning" width="20"></iconify-icon>
+        <span th:text="${errorMessage}">error</span>
+    </div>
+
+    <form th:action="@{/auth/register}" th:object="${registerRequest}" method="post"
+          class="flex flex-col gap-4" novalidate>
+
+        <fieldset class="fieldset">
+            <legend class="fieldset-legend">Email</legend>
+            <input class="input w-full" type="email" th:field="*{email}"
+                   autocomplete="email" placeholder="you@email.com" required>
+            <p class="label text-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">email error</p>
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend class="fieldset-legend">Username</legend>
+            <input class="input w-full" type="text" th:field="*{username}"
+                   autocomplete="nickname" placeholder="Username" required>
+            <p class="label text-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}">username error</p>
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend class="fieldset-legend">Password</legend>
+            <input class="input w-full" type="password" th:field="*{password}"
+                   autocomplete="new-password" placeholder="At least 6 characters" required>
+            <p class="label text-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}">password error</p>
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary btn-block mt-2">
+            Create account
+            <iconify-icon icon="carbon:arrow-right" width="20"></iconify-icon>
+        </button>
+    </form>
+
+    <footer class="mt-auto text-center text-sm text-base-content/60">
+        Already have an account?
+        <a th:href="@{/auth/login}" class="link link-primary ml-1">Sign in</a>
+    </footer>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Full group screen. Model: group, members, names(Map id->username), bills,
+  debts(List SimplifiedDebtDTO), activity(List Settlement), isAdmin,
+  addableFriends, currentUser. All mutating actions return this same fragment,
+  swapped into #app-scene.
+-->
+<div th:fragment="sceneContent" th:with="me=${currentUser != null ? currentUser.id : null}">
+
+    <!-- Header -->
+    <div class="flex items-center gap-2 mb-3">
+        <button type="button" class="btn btn-ghost btn-sm btn-square" aria-label="Back"
+                hx-get="/ui/home" hx-target="#app-scene" hx-swap="innerHTML">
+            <iconify-icon icon="carbon:arrow-left" width="22"></iconify-icon>
+        </button>
+        <h1 class="text-xl font-semibold flex-1 min-w-0 truncate" th:text="${group.name}">Group</h1>
+        <button th:if="${isAdmin}" type="button" class="btn btn-ghost btn-sm btn-square text-error" aria-label="Delete group"
+                th:hx-delete="@{'/api/groups/' + ${group.id}}"
+                hx-target="#app-scene" hx-swap="innerHTML"
+                hx-confirm="Delete this group and all its bills? This cannot be undone."
+                hx-on:htmx:after-request="if(event.detail.successful){htmx.ajax('GET','/ui/home','#app-scene');}">
+            <iconify-icon icon="carbon:trash-can" width="20"></iconify-icon>
+        </button>
+    </div>
+
+    <!-- Members -->
+    <div class="flex flex-wrap items-center gap-2 mb-4">
+        <span th:each="m : ${members}" class="badge badge-soft" th:text="${m.username}">member</span>
+    </div>
+
+    <!-- Admin: add a friend to the group -->
+    <div th:if="${isAdmin}" class="mb-6">
+        <p th:if="${addableFriends.isEmpty()}" class="text-xs text-base-content/50">
+            All your friends are already here. Add more friends from Home first.
+        </p>
+        <form th:unless="${addableFriends.isEmpty()}" class="join w-full"
+              th:hx-post="@{'/api/groups/' + ${group.id} + '/members'}"
+              hx-target="#app-scene" hx-swap="innerHTML">
+            <select name="userId" class="select join-item flex-1" required>
+                <option th:each="f : ${addableFriends}" th:value="${f.id}" th:text="${f.username}">friend</option>
+            </select>
+            <button type="submit" class="btn btn-primary join-item">
+                <iconify-icon icon="carbon:add" width="18"></iconify-icon> Add
+            </button>
+        </form>
+    </div>
+
+    <!-- Who owes whom -->
+    <section class="mb-7">
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-3">Who owes whom</h2>
+
+        <div th:if="${debts == null or debts.isEmpty()}"
+             class="rounded-box border border-dashed border-base-300 p-6 text-center text-sm text-base-content/60">
+            Everyone is settled up.
+        </div>
+
+        <div class="flex flex-col gap-3" th:unless="${debts == null or debts.isEmpty()}">
+            <div th:each="d : ${debts}" class="card card-border bg-base-100"
+                 th:with="involved=${me != null and (d.debtorId == me or d.creditorId == me)}">
+                <div class="card-body p-4 gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium"
+                              th:text="${names.containsKey(d.debtorId) ? names.get(d.debtorId) : '#' + d.debtorId}">A</span>
+                        <span class="text-sm text-base-content/60">owes</span>
+                        <span class="font-medium"
+                              th:text="${names.containsKey(d.creditorId) ? names.get(d.creditorId) : '#' + d.creditorId}">B</span>
+                        <span class="ml-auto font-semibold text-error"
+                              th:text="'€' + ${#numbers.formatDecimal(d.amount,1,2)}">€0.00</span>
+                    </div>
+                    <!-- Either party may confirm the settlement -->
+                    <form th:if="${involved}"
+                          th:hx-post="@{'/api/expenses/group/' + ${group.id} + '/settle'}"
+                          hx-target="#app-scene" hx-swap="innerHTML">
+                        <input type="hidden" name="debtorId" th:value="${d.debtorId}">
+                        <input type="hidden" name="creditorId" th:value="${d.creditorId}">
+                        <input type="hidden" name="amount" th:value="${d.amount}">
+                        <button type="submit" class="btn btn-sm btn-primary btn-block">
+                            <iconify-icon icon="carbon:checkmark" width="16"></iconify-icon>
+                            <span th:text="${d.creditorId == me} ? 'Mark as received' : 'Confirm I paid'">Confirm</span>
+                        </button>
+                    </form>
+                    <p th:unless="${involved}" class="text-xs text-base-content/50">Only these two can settle this.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Add bill -->
+    <div class="mb-7">
+        <button type="button" class="btn btn-primary btn-block"
+                onclick="document.getElementById('bill_sheet').showModal()">
+            <iconify-icon icon="carbon:add" width="20"></iconify-icon> Add a bill
+        </button>
+    </div>
+
+    <!-- Bills list -->
+    <section class="mb-7">
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-3">Bills</h2>
+        <div th:if="${bills == null or bills.isEmpty()}"
+             class="rounded-box border border-dashed border-base-300 p-6 text-center text-sm text-base-content/60">
+            No bills yet.
+        </div>
+        <div class="flex flex-col gap-3" th:unless="${bills == null or bills.isEmpty()}">
+            <div th:each="b : ${bills}" class="card card-border bg-base-100">
+                <div class="card-body p-4 gap-1">
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium flex-1 min-w-0 truncate" th:text="${b.description}">Dinner</span>
+                        <span class="font-semibold" th:text="'€' + ${#numbers.formatDecimal(b.totalAmount,1,2)}">€0.00</span>
+                    </div>
+                    <p class="text-xs text-base-content/60">
+                        <span th:text="${names.containsKey(b.creatorId) ? names.get(b.creatorId) : '#' + b.creatorId}">payer</span>
+                        paid · for <span th:text="${b.participantNames}">people</span>
+                    </p>
+                    <p class="text-xs text-base-content/40" th:text="${b.createdAt != null ? b.createdAt.toString().substring(0,10) : ''}">date</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Activity / settlement trail -->
+    <section class="mb-4">
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-3">Settlement log</h2>
+        <div th:if="${activity == null or activity.isEmpty()}"
+             class="rounded-box border border-dashed border-base-300 p-6 text-center text-sm text-base-content/60">
+            No settlements yet.
+        </div>
+        <div class="flex flex-col gap-2" th:unless="${activity == null or activity.isEmpty()}">
+            <div th:each="s : ${activity}" class="card card-border bg-base-100"
+                 th:classappend="${s.status == 'REVERTED'} ? 'opacity-50' : ''">
+                <div class="card-body p-4 gap-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">
+                            <span class="font-medium"
+                                  th:text="${names.containsKey(s.debtorId) ? names.get(s.debtorId) : '#' + s.debtorId}">A</span>
+                            <span class="text-base-content/60"> paid </span>
+                            <span class="font-medium"
+                                  th:text="${names.containsKey(s.creditorId) ? names.get(s.creditorId) : '#' + s.creditorId}">B</span>
+                        </span>
+                        <span class="ml-auto font-semibold"
+                              th:classappend="${s.status == 'REVERTED'} ? 'line-through' : ''"
+                              th:text="'€' + ${#numbers.formatDecimal(s.amount,1,2)}">€0.00</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-base-content/50"
+                              th:text="${(s.createdAt != null ? s.createdAt.toString().substring(0,10) : '')
+                                       + ' · confirmed by '
+                                       + (names.containsKey(s.confirmedById) ? names.get(s.confirmedById) : '#' + s.confirmedById)}">
+                            meta</span>
+                        <span th:if="${s.status == 'REVERTED'}" class="badge badge-sm badge-error badge-soft ml-auto">Reverted</span>
+                        <!-- Either party (payer or receiver) may revert -->
+                        <button th:if="${s.status == 'CONFIRMED' and me != null and (s.creditorId == me or s.debtorId == me)}"
+                                type="button" class="btn btn-xs btn-ghost ml-auto"
+                                th:hx-post="@{'/api/expenses/group/' + ${group.id} + '/settle/' + ${s.id} + '/revert'}"
+                                hx-target="#app-scene" hx-swap="innerHTML"
+                                hx-confirm="Revert this settlement? The debt will be restored.">Revert</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Bill form modal ===== -->
+    <dialog id="bill_sheet" class="modal modal-bottom">
+        <div class="modal-box">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Add a bill</h3>
+                <button type="button" class="btn btn-sm btn-circle btn-ghost" aria-label="Close"
+                        onclick="document.getElementById('bill_sheet').close()">
+                    <iconify-icon icon="carbon:close" width="20"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- mode toggle -->
+            <div class="join w-full mb-4">
+                <input class="join-item btn flex-1" type="radio" name="billmode" aria-label="Fair split"
+                       checked onchange="teilrBillMode('fair')">
+                <input class="join-item btn flex-1" type="radio" name="billmode" aria-label="Detailed"
+                       onchange="teilrBillMode('detailed')">
+            </div>
+
+            <!-- ===== FAIR form ===== -->
+            <form id="fair-form"
+                  th:hx-post="@{'/api/expenses/group/' + ${group.id} + '/bill/equal'}"
+                  hx-target="#app-scene" hx-swap="innerHTML">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Description</legend>
+                    <input class="input w-full" type="text" name="description" required placeholder="Dinner">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Total (€)</legend>
+                    <input class="input w-full" type="number" step="0.01" min="0.01" name="totalAmount" required placeholder="0.00">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Who paid?</legend>
+                    <select class="select w-full" name="payerId" required>
+                        <option th:each="m : ${members}" th:value="${m.id}" th:text="${m.username}"
+                                th:selected="${me != null and m.id == me}">member</option>
+                    </select>
+                </fieldset>
+                <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mt-3 mb-2">Split between</p>
+                <div class="flex flex-col gap-2 mb-4">
+                    <label th:each="m : ${members}" class="label cursor-pointer justify-start gap-3">
+                        <input type="checkbox" class="checkbox checkbox-sm" name="participantIds" th:value="${m.id}" checked>
+                        <span th:text="${m.username}">name</span>
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <iconify-icon icon="carbon:add" width="20"></iconify-icon> Add bill
+                </button>
+            </form>
+
+            <!-- ===== DETAILED form ===== -->
+            <form id="detailed-form" class="hidden"
+                  th:hx-post="@{'/api/expenses/group/' + ${group.id} + '/bill/detailed'}"
+                  hx-target="#app-scene" hx-swap="innerHTML">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Description</legend>
+                    <input class="input w-full" type="text" name="description" required placeholder="Groceries">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Total (€)</legend>
+                    <input class="input w-full" type="number" step="0.01" min="0.01" name="totalAmount" required
+                           placeholder="0.00" id="det-total" oninput="teilrDetailedCheck()">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Who paid?</legend>
+                    <select class="select w-full" name="payerId" required>
+                        <option th:each="m : ${members}" th:value="${m.id}" th:text="${m.username}"
+                                th:selected="${me != null and m.id == me}">member</option>
+                    </select>
+                </fieldset>
+                <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mt-3 mb-2">Each person owes</p>
+                <div class="flex flex-col gap-2 mb-3">
+                    <div th:each="m : ${members}" class="flex items-center gap-3">
+                        <input type="hidden" name="splitUserId" th:value="${m.id}">
+                        <span class="flex-1 min-w-0 truncate" th:text="${m.username}">name</span>
+                        <span class="text-base-content/60">€</span>
+                        <input class="input input-sm det-share w-24 text-right" type="number" step="0.01" min="0"
+                               name="splitAmount" value="0" oninput="teilrDetailedCheck()">
+                    </div>
+                </div>
+                <p id="det-remaining" class="text-sm mb-4 text-base-content/60">Enter a total to begin.</p>
+                <button type="submit" id="det-submit" class="btn btn-primary btn-block" disabled>
+                    <iconify-icon icon="carbon:add" width="20"></iconify-icon> Add bill
+                </button>
+            </form>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <script th:inline="none">
+        function teilrBillMode(mode) {
+            document.getElementById('fair-form').classList.toggle('hidden', mode !== 'fair');
+            document.getElementById('detailed-form').classList.toggle('hidden', mode !== 'detailed');
+        }
+        function teilrDetailedCheck() {
+            var totalEl = document.getElementById('det-total');
+            var total = Math.round((parseFloat(totalEl.value) || 0) * 100);
+            var sum = 0;
+            document.querySelectorAll('#detailed-form .det-share').forEach(function (i) {
+                sum += Math.round((parseFloat(i.value) || 0) * 100);
+            });
+            var diff = total - sum;
+            var note = document.getElementById('det-remaining');
+            var submit = document.getElementById('det-submit');
+            if (total <= 0) {
+                note.textContent = 'Enter a total to begin.';
+                note.className = 'text-sm mb-4 text-base-content/60';
+                submit.disabled = true;
+                return;
+            }
+            if (diff === 0) {
+                note.textContent = 'Balanced';
+                note.className = 'text-sm mb-4 text-success';
+                submit.disabled = false;
+            } else if (diff > 0) {
+                note.textContent = 'Still ' + (diff / 100).toFixed(2) + ' € to assign';
+                note.className = 'text-sm mb-4 text-error';
+                submit.disabled = true;
+            } else {
+                note.textContent = 'Over by ' + (Math.abs(diff) / 100).toFixed(2) + ' €';
+                note.className = 'text-sm mb-4 text-error';
+                submit.disabled = true;
+            }
+        }
+    </script>
+</div>
+
+</body>
+</html>

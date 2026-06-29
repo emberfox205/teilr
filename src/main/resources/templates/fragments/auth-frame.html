@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title th:text="${title} ?: 'teilr'">teilr</title>
+
+    <!-- daisyUI 5 components + Tailwind CSS 4 utilities (CDN) -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+    <!-- Iconify icon component, used with the Carbon icon set (icon="carbon:...") -->
+    <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+
+    <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+
+<!-- Block shown on non-smartphone widths -->
+<div th:fragment="desktop-block" class="desktop-block fixed inset-0 z-50 items-center justify-center p-10 bg-base-200">
+    <div class="max-w-md text-center">
+        <div class="flex items-center justify-center gap-2 mb-6 text-xl font-semibold">
+            <iconify-icon icon="carbon:money" width="22" class="text-primary"></iconify-icon>
+            <span>teilr</span>
+        </div>
+        <span class="badge badge-soft mb-6">Mobile only</span>
+        <h1 class="text-3xl font-semibold mb-4">This app is designed for mobile</h1>
+        <p class="text-base-content/70">
+            Open this page on a phone, or make your browser window narrower than
+            600 pixels to continue.
+        </p>
+    </div>
+</div>
+
+</body>
+</html>

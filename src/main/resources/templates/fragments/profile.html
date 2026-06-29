@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Read-only profile. ${currentUser} is supplied by GlobalControllerAdvice. -->
+<div th:fragment="sceneContent">
+
+    <section class="flex flex-col items-center text-center mt-4 mb-8">
+        <div class="avatar avatar-placeholder">
+            <div class="bg-neutral text-neutral-content w-20 rounded-full">
+                <span class="text-3xl"
+                      th:text="${currentUser != null ? #strings.substring(currentUser.username,0,1) : '?'}">A</span>
+            </div>
+        </div>
+        <h1 class="text-2xl font-semibold mt-4" th:text="${currentUser != null ? currentUser.username : 'unknown'}">name</h1>
+        <span class="badge badge-soft mt-2"
+              th:text="'#' + ${currentUser != null ? #numbers.formatInteger(currentUser.id,4) : '----'}">#0000</span>
+    </section>
+
+    <ul class="list bg-base-100 rounded-box border border-base-300 mb-8">
+        <li class="list-row">
+            <iconify-icon icon="carbon:id" width="22" class="text-base-content/60"></iconify-icon>
+            <div class="list-col-grow">
+                <div class="text-xs text-base-content/50">Your 4-digit ID</div>
+                <div class="font-medium" th:text="${currentUser != null ? #numbers.formatInteger(currentUser.id,4) : '----'}">0000</div>
+                <div class="text-xs text-base-content/50">Share this so others can add you.</div>
+            </div>
+        </li>
+        <li class="list-row">
+            <iconify-icon icon="carbon:user" width="22" class="text-base-content/60"></iconify-icon>
+            <div class="list-col-grow">
+                <div class="text-xs text-base-content/50">Username</div>
+                <div class="font-medium" th:text="${currentUser != null ? currentUser.username : ''}">name</div>
+            </div>
+        </li>
+        <li class="list-row">
+            <iconify-icon icon="carbon:email" width="22" class="text-base-content/60"></iconify-icon>
+            <div class="list-col-grow">
+                <div class="text-xs text-base-content/50">Email</div>
+                <div class="font-medium break-all" th:text="${currentUser != null ? currentUser.email : ''}">email</div>
+            </div>
+        </li>
+    </ul>
+
+    <!-- Logout is a plain form so Spring auto-injects CSRF and does a full redirect. -->
+    <form th:action="@{/auth/logout}" method="post">
+        <button type="submit" class="btn btn-outline btn-block">
+            <iconify-icon icon="carbon:logout" width="18"></iconify-icon> Log out
+        </button>
+    </form>
+</div>
+
+</body>
+</html>

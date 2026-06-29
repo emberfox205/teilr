@@ -24,6 +24,9 @@ public class FriendshipService {
         if (requesterId.equals(targetId)) {
             throw new IllegalArgumentException("Cannot friend yourself.");
         }
+        if (!userRepository.existsById(targetId)) {
+            throw new IllegalArgumentException("Target user does not exist.");
+        }
         // Check both directions to prevent duplicates
         if (friendshipRepository.findByUserIdAAndUserIdB(requesterId, targetId).isPresent() ||
             friendshipRepository.findByUserIdAAndUserIdB(targetId, requesterId).isPresent()) {
@@ -50,14 +53,31 @@ public class FriendshipService {
 
     /** Returns the list of accepted friends (User objects) for the given user. */
     public List<User> getFriends(Long userId) {
-        return friendshipRepository.findAcceptedByUserId(userId).stream()
+        List<Long> friendIds = friendshipRepository.findAcceptedByUserId(userId).stream()
                 .map(f -> f.getUserIdA().equals(userId) ? f.getUserIdB() : f.getUserIdA())
-                .map(friendId -> userRepository.findById(friendId).orElseThrow())
                 .toList();
+        return userRepository.findAllById(friendIds);
     }
 
     /** Returns incoming PENDING requests for a user. */
     public List<Friendship> getPendingRequests(Long userId) {
         return friendshipRepository.findByUserIdBAndStatus(userId, "PENDING");
+    }
+
+    /**
+     * True if the two users have an ACCEPTED friendship (in either direction).
+     * A user counts as "friends" with themselves so self-membership is allowed.
+     */
+    public boolean areFriends(Long a, Long b) {
+        if (a == null || b == null) {
+            return false;
+        }
+        if (a.equals(b)) {
+            return true;
+        }
+        return friendshipRepository.findByUserIdAAndUserIdB(a, b)
+                        .filter(f -> "ACCEPTED".equals(f.getStatus())).isPresent()
+                || friendshipRepository.findByUserIdAAndUserIdB(b, a)
+                        .filter(f -> "ACCEPTED".equals(f.getStatus())).isPresent();
     }
 }

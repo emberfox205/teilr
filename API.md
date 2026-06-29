@@ -6,9 +6,63 @@ Two transports are in use:
 - **HTMX** endpoints return a rendered Thymeleaf HTML fragment — swap it directly into the DOM with `hx-target`.
 - **REST** endpoints return JSON — use `fetch` / `axios` / your preferred HTTP client.
 
+> [!IMPORTANT]
+> **Authentication & Security**
+> This API uses Spring `HttpSession` cookies to track the logged-in user. You do **not** need to manually pass `userId` or `requesterId` in the query parameters or body for actions you perform. The backend automatically knows who you are based on your session cookie. Always rely on the session!
+
 ---
 
 ## Users
+
+### Register a new user
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **URL** | `/api/users/register` |
+| **Transport** | Form Submit (HTMX) |
+| **Body** | `application/x-www-form-urlencoded` |
+| **Response** | `302 Redirect` to `/ui/home` on success, or `/ui/register?error=true` |
+
+**Parameters**
+
+| Param | Required | Notes |
+|---|---|---|
+| `username` | ✅ | User handle (must not be blank) |
+| `email` | ✅ | Unique email (must not be blank) |
+| `passwordHash` | ✅ | The raw password to be hashed (must not be blank) |
+
+---
+
+### Log in
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **URL** | `/api/users/login` |
+| **Transport** | Form Submit (HTMX) |
+| **Body** | `application/x-www-form-urlencoded` |
+| **Response** | `302 Redirect` to `/ui/home` on success, or `/ui/login?error=true` |
+
+**Parameters**
+
+| Param | Required | Notes |
+|---|---|---|
+| `identifier` | ✅ | Email or 4-digit ID |
+| `passwordHash` | ✅ | The raw password |
+
+---
+
+### Log out
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **URL** | `/api/users/logout` |
+| **Transport** | Form Submit (HTMX) |
+| **Response** | `302 Redirect` to `/ui/login` |
+
+---
 
 ### Search for a user by ID
 
@@ -69,7 +123,7 @@ Two transports are in use:
 
 | Param | Required | Notes |
 |---|---|---|
-| `name` | ✅ | Group display name |
+| `name` | ✅ | Group display name (must not be blank) |
 | `adminId` | ✅ | ID of the creating user — becomes admin |
 | `memberIds` | ❌ | Repeat for multiple: `memberIds=1&memberIds=2`. Admin is always added, even if omitted. |
 
@@ -96,12 +150,12 @@ Two transports are in use:
 | | |
 |---|---|
 | **Method** | `GET` |
-| **URL** | `/api/groups?userId={id}` |
+| **URL** | `/api/groups` |
 | **Transport** | HTMX |
 | **Fragment** | `fragments/group-list :: groupListContent` |
 
 ```html
-<div hx-get="/api/groups?userId={{currentUserId}}"
+<div hx-get="/api/groups"
      hx-trigger="load"
      hx-target="#group-list"></div>
 ```
@@ -122,6 +176,9 @@ Two transports are in use:
         hx-target="#member-list">Add</button>
 ```
 
+> ⚠️ **Security**: Only the **Group Admin** can add members. Throws a `403 SecurityException` if the caller is not the admin.
+> ⚠️ Throws an exception if the `userId` does not exist in the system.
+
 ---
 
 ### Delete a group *(admin only)*
@@ -129,12 +186,12 @@ Two transports are in use:
 | | |
 |---|---|
 | **Method** | `DELETE` |
-| **URL** | `/api/groups/{groupId}?requesterId={id}` |
+| **URL** | `/api/groups/{groupId}` |
 | **Transport** | HTMX |
 | **Response** | `204 No Content` — HTMX removes the element |
 
 ```html
-<button hx-delete="/api/groups/{{groupId}}?requesterId={{currentUserId}}"
+<button hx-delete="/api/groups/{{groupId}}"
         hx-target="closest .group-card"
         hx-swap="outerHTML">Delete Group</button>
 ```
@@ -150,13 +207,13 @@ Two transports are in use:
 | | |
 |---|---|
 | **Method** | `GET` |
-| **URL** | `/api/friends?userId={id}` |
+| **URL** | `/api/friends` |
 | **Transport** | HTMX |
 | **Fragment** | `fragments/friend-list :: friendListContent` |
 | **Primary use** | Populate the member tick-list in the "Create Group" form |
 
 ```html
-<div hx-get="/api/friends?userId={{currentUserId}}"
+<div hx-get="/api/friends"
      hx-trigger="load"
      hx-target="#friend-list"></div>
 ```
@@ -174,12 +231,12 @@ Two transports are in use:
 | | |
 |---|---|
 | **Method** | `GET` |
-| **URL** | `/api/friends/pending?userId={id}` |
+| **URL** | `/api/friends/pending` |
 | **Transport** | HTMX |
 | **Fragment** | `fragments/friend-requests :: requestListContent` |
 
 ```html
-<div hx-get="/api/friends/pending?userId={{currentUserId}}"
+<div hx-get="/api/friends/pending"
      hx-trigger="load"
      hx-target="#pending-requests"></div>
 ```
@@ -197,17 +254,18 @@ Two transports are in use:
 | | |
 |---|---|
 | **Method** | `POST` |
-| **URL** | `/api/friends/request?requesterId={id}&targetId={id}` |
+| **URL** | `/api/friends/request?targetId={id}` |
 | **Transport** | REST (JSON response) |
 | **Response** | `200 Friendship` |
 
 ```js
-await fetch(`/api/friends/request?requesterId=${me}&targetId=${them}`, {
+await fetch(`/api/friends/request?targetId=${them}`, {
   method: 'POST'
 });
 ```
 
 > ⚠️ Returns `500` if a request already exists in either direction, or if `requesterId === targetId`. Check and handle gracefully.
+> ⚠️ **Validation**: Throws an exception if the `targetId` does not exist in the system.
 
 ---
 
@@ -216,12 +274,12 @@ await fetch(`/api/friends/request?requesterId=${me}&targetId=${them}`, {
 | | |
 |---|---|
 | **Method** | `POST` |
-| **URL** | `/api/friends/accept?friendshipId={id}&userId={id}` |
+| **URL** | `/api/friends/accept?friendshipId={id}` |
 | **Transport** | REST (JSON response) |
 | **Response** | `200 Friendship` with `status: "ACCEPTED"` |
 
 ```js
-await fetch(`/api/friends/accept?friendshipId=${reqId}&userId=${me}`, {
+await fetch(`/api/friends/accept?friendshipId=${reqId}`, {
   method: 'POST'
 });
 ```
@@ -295,7 +353,6 @@ await fetch('/api/expenses/bill', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     groupId: 7,
-    creatorId: 1,          // who paid
     description: "Dinner",
     totalAmount: 90.00,
     participantIds: [1, 2, 3],   // everyone who ate
@@ -304,6 +361,11 @@ await fetch('/api/expenses/bill', {
 });
 ```
 
+> **Security**: The `creatorId` (who paid) is securely and automatically inferred from the caller's session cookie.
+> **Security**: The backend validates that both the `creatorId` and ALL `participantIds` belong to the group. Cross-group debt forgery will throw an exception.
+> **Validation**: `participantIds` array must NOT be empty, or the server will throw an exception.
+> **Validation**: `totalAmount` must be strictly positive (`> 0`).
+> **Validation**: `participantIds` array must NOT be empty.
 > **Rounding**: The remainder cent(s) (e.g. 100 ÷ 3 = 33.33 + 0.01 leftover) is assigned to `participantIds[0]`.
 
 ---
@@ -324,11 +386,12 @@ await fetch('/api/expenses/settle', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     groupId: 7,
-    debtorId: 2,    // person paying
     creditorId: 1,  // person receiving
     amount: 45.00
   })
 });
 ```
+
+> **Security**: The `debtorId` (who is paying off the debt) is securely and automatically inferred from the caller's session cookie.
 
 Internally reuses `createEqualBill` — the settlement is recorded as a bill where the debtor is the creator and the creditor is the sole participant.

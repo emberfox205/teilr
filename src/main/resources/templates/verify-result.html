@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/auth-frame :: head('teilr · Verification')}"></head>
+<body>
+
+<div th:replace="~{fragments/auth-frame :: desktop-block}"></div>
+
+<main class="smartphone-only min-h-screen w-full flex-col justify-between gap-8 px-6 py-10"
+      style="max-width: 600px; margin: 0 auto;">
+
+    <header class="flex items-center justify-between">
+        <div class="flex items-center gap-2 text-xl font-semibold">
+            <iconify-icon icon="carbon:money" width="20" class="text-primary"></iconify-icon>
+            <span>teilr</span>
+        </div>
+    </header>
+
+    <!-- Success state -->
+    <section th:if="${errorMessage == null}">
+        <span class="badge badge-success badge-soft gap-1 mb-6">
+            <iconify-icon icon="carbon:checkmark" width="14"></iconify-icon> Verified
+        </span>
+        <h1 class="text-2xl font-semibold mb-2">Account confirmed</h1>
+        <p class="text-base-content/70 mb-6">
+            Your account is active. Others can add you to a group with your 4-digit ID.
+        </p>
+        <div class="card bg-neutral text-neutral-content">
+            <div class="card-body items-center text-center">
+                <span class="text-sm opacity-70">Your ID</span>
+                <span class="text-5xl font-bold">#<span th:text="${userId}">0000</span></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Failure state -->
+    <section th:if="${errorMessage != null}">
+        <span class="badge badge-error badge-soft mb-6">Link invalid</span>
+        <h1 class="text-2xl font-semibold mb-2">This link did not work</h1>
+        <p class="text-base-content/70" th:text="${errorMessage}">error</p>
+    </section>
+
+    <footer class="mt-auto">
+        <a th:href="@{/auth/login}" class="btn btn-primary btn-block">
+            <span th:text="${errorMessage == null} ? 'Sign in' : 'Back to sign in'">Sign in</span>
+            <iconify-icon icon="carbon:arrow-right" width="20"></iconify-icon>
+        </a>
+    </footer>
+</main>
+
+</body>
+</html>

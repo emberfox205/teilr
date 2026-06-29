@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Renders the list of groups a user belongs to. -->
+<div th:fragment="groupListContent">
+    <div th:if="${groups == null or groups.isEmpty()}"
+         class="rounded-box border border-dashed border-base-300 p-6 text-center text-sm text-base-content/60">
+        No groups yet. Tap <span class="font-medium">New group</span> to create one.
+    </div>
+
+    <div class="flex flex-col gap-3" th:unless="${groups == null or groups.isEmpty()}">
+        <!-- One tile per group. Tapping opens the full group-detail scene. -->
+        <div th:each="g : ${groups}"
+             class="card card-border bg-base-100 cursor-pointer hover:bg-base-200 transition-colors"
+             th:hx-get="@{'/api/groups/' + ${g.id} + '/view'}"
+             hx-target="#app-scene" hx-swap="innerHTML">
+            <div class="card-body flex-row items-center gap-3 p-4">
+                <div class="avatar avatar-placeholder">
+                    <div class="bg-primary/10 text-primary w-9 rounded-full">
+                        <iconify-icon icon="carbon:group" width="18"></iconify-icon>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-medium truncate" th:text="${g.name}">Group name</p>
+                    <p class="text-xs text-base-content/50">Open group</p>
+                </div>
+                <iconify-icon icon="carbon:chevron-right" width="20" class="text-base-content/40"></iconify-icon>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

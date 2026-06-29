@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Bottom-sheet form to create a group. Loaded into #sheet, open immediately. -->
+<div th:fragment="groupFormContent" class="modal modal-open modal-bottom"
+     onclick="if(event.target===this){ document.getElementById('sheet').innerHTML=''; }">
+    <div class="modal-box">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">New group</h3>
+            <button type="button" class="btn btn-sm btn-circle btn-ghost" aria-label="Close"
+                    onclick="document.getElementById('sheet').innerHTML=''">
+                <iconify-icon icon="carbon:close" width="20"></iconify-icon>
+            </button>
+        </div>
+
+        <!--
+          The name lives in the form; the friend checkboxes live OUTSIDE it and
+          reference it with form="group-form" so their HTMX load event does not
+          bubble into the form's after-request handler (which closes the sheet).
+          Only friends can be added to a group.
+        -->
+        <form id="group-form"
+              hx-post="/api/groups" hx-swap="none"
+              hx-on:htmx:after-request="if(event.target===this && event.detail.successful){document.getElementById('sheet').innerHTML='';htmx.trigger(document.body,'refreshGroups');}">
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">Group name</legend>
+                <input class="input w-full" type="text" name="name" required autofocus placeholder="Group name">
+            </fieldset>
+        </form>
+
+        <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mt-4 mb-2">Add friends</p>
+        <!-- friends quick-pick (checkboxes, name=memberIds, submitted with #group-form) -->
+        <div hx-get="/api/friends" hx-vals='{"selectable":"true"}'
+             hx-trigger="load" hx-target="this" hx-swap="innerHTML" class="mb-4"></div>
+
+        <button type="submit" form="group-form" class="btn btn-primary btn-block">
+            <iconify-icon icon="carbon:add" width="20"></iconify-icon> Create group
+        </button>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Result of a 4-digit-ID lookup. The action shown depends on ${context}:
+    friend   → send a friend request
+    newGroup → add to the group being created (client-side chip)
+-->
+<div th:fragment="searchResultContent">
+
+    <p th:if="${notFound}" class="text-sm text-base-content/60">No user with that ID.</p>
+
+    <div th:if="${user != null}" class="flex items-center gap-3">
+        <div class="avatar avatar-placeholder">
+            <div class="bg-base-300 text-base-content w-9 rounded-full">
+                <span th:text="${#strings.substring(user.username,0,1)}">A</span>
+            </div>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="font-medium truncate" th:text="${user.username}">name</p>
+            <p class="text-xs text-base-content/50" th:text="'#' + ${#numbers.formatInteger(user.id,4)}">#0000</p>
+        </div>
+
+        <!-- this is you -->
+        <span th:if="${currentUser != null and user.id == currentUser.id}"
+              class="text-xs text-base-content/50">This is you</span>
+
+        <!-- friend request -->
+        <button th:if="${context == 'friend' and (currentUser == null or user.id != currentUser.id)}"
+                type="button" class="btn btn-sm btn-primary"
+                th:hx-post="@{'/api/friends/request?targetId=' + ${user.id}}"
+                hx-swap="none"
+                hx-on:htmx:after-request="this.disabled=true; this.textContent = event.detail.successful ? 'Request sent' : 'Already linked'; if(event.detail.successful){htmx.trigger(document.body,'refreshFriends');}">
+            <iconify-icon icon="carbon:user-follow" width="16"></iconify-icon> Add friend
+        </button>
+
+        <!-- add to new group -->
+        <button th:if="${context == 'newGroup' and (currentUser == null or user.id != currentUser.id)}"
+                type="button" class="btn btn-sm btn-primary"
+                th:attr="data-id=${user.id},data-name=${user.username}"
+                onclick="window.teilrAddMember(this.getAttribute('data-id'), this.getAttribute('data-name'))">
+            <iconify-icon icon="carbon:add" width="16"></iconify-icon> Add
+        </button>
+    </div>
+</div>
+
+</body>
+</html>

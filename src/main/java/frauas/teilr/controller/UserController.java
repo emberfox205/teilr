@@ -29,7 +29,9 @@ public class UserController {
     @GetMapping("/search")
     // GET  request -> /user/search
     // Full URL = /users (class) + /search (method) = GET /users/search
-    public String searchUser(@RequestParam Long userId, Model model) {
+    public String searchUser(@RequestParam Long userId,
+                             @RequestParam(defaultValue = "friend") String context,
+                             Model model) {
         Optional<User> result = userService.findById(userId);
         model.addAttribute("user", result.orElse(null));
         // ← Puts the User object into the model with the key "user"
@@ -38,6 +40,8 @@ public class UserController {
         model.addAttribute("notFound", result.isEmpty());
         // ← Puts true/false into the model with the key "notFound"
         // ← In the HTML: th:if="${notFound}" shows a "User not found" message
+        // context drives which action button the result shows: "friend" | "newGroup"
+        model.addAttribute("context", context);
         return "fragments/user-search-result :: searchResultContent";
         //      ↑ file path                      ↑ fragment name inside that file
         // Thymeleaf looks for: src/main/resources/templates/fragments/user-search-result.html
