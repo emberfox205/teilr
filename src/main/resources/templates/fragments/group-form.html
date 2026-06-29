@@ -15,10 +15,10 @@
         </div>
 
         <!--
-          The form holds the name + chosen-member chips. The member pickers
-          (friends checkboxes, add-by-ID) live OUTSIDE the form and reference it
-          with form="group-form" so their HTMX load events do not bubble into the
-          form's after-request handler (which would otherwise close the sheet).
+          The name lives in the form; the friend checkboxes live OUTSIDE it and
+          reference it with form="group-form" so their HTMX load event does not
+          bubble into the form's after-request handler (which closes the sheet).
+          Only friends can be added to a group.
         -->
         <form id="group-form"
               hx-post="/api/groups" hx-swap="none"
@@ -27,60 +27,17 @@
                 <legend class="fieldset-legend">Group name</legend>
                 <input class="input w-full" type="text" name="name" required autofocus placeholder="Group name">
             </fieldset>
-
-            <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mt-3 mb-2">Members</p>
-            <div id="chosen-members" class="flex flex-wrap gap-2 mb-2">
-                <span class="text-xs text-base-content/60" id="chosen-empty">You are added automatically. Add others below.</span>
-            </div>
         </form>
 
-        <!-- friends quick-pick (checkboxes, name=memberIds) -->
+        <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mt-4 mb-2">Add friends</p>
+        <!-- friends quick-pick (checkboxes, name=memberIds, submitted with #group-form) -->
         <div hx-get="/api/friends" hx-vals='{"selectable":"true"}'
              hx-trigger="load" hx-target="this" hx-swap="innerHTML" class="mb-4"></div>
-
-        <!-- add by 4-digit ID -->
-        <div class="card card-border bg-base-100 mb-4">
-            <div class="card-body p-4 gap-2">
-                <label class="text-sm font-medium">Add by 4-digit ID</label>
-                <input class="input w-full" type="number" min="0" max="9999" name="userId" placeholder="0000"
-                       hx-get="/api/users/search"
-                       hx-trigger="input changed delay:350ms"
-                       hx-target="#group-member-search"
-                       hx-vals='{"context":"newGroup"}'
-                       hx-include="this">
-                <div id="group-member-search"></div>
-            </div>
-        </div>
 
         <button type="submit" form="group-form" class="btn btn-primary btn-block">
             <iconify-icon icon="carbon:add" width="20"></iconify-icon> Create group
         </button>
     </div>
-
-    <script th:inline="none">
-        // Add a member chip + hidden input to the group form (called from search result).
-        window.teilrAddMember = function (id, name) {
-            var box = document.getElementById('chosen-members');
-            if (!box) return;
-            if (box.querySelector('[data-mid="' + id + '"]')) return; // already added
-            var empty = document.getElementById('chosen-empty');
-            if (empty) empty.remove();
-
-            var chip = document.createElement('span');
-            chip.setAttribute('data-mid', id);
-            chip.className = 'badge badge-neutral badge-lg gap-1';
-            chip.innerHTML = '<span></span>' +
-                '<button type="button" class="cursor-pointer" aria-label="Remove">' +
-                '<iconify-icon icon="carbon:close"></iconify-icon></button>' +
-                '<input type="hidden" name="memberIds" value="' + id + '" form="group-form">';
-            chip.querySelector('span').textContent = name + ' · #' + String(id).padStart(4, '0');
-            chip.querySelector('button').onclick = function () { chip.remove(); };
-            box.appendChild(chip);
-
-            var res = document.getElementById('group-member-search');
-            if (res) res.innerHTML = '';
-        };
-    </script>
 </div>
 
 </body>
