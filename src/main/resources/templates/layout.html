@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/auth-frame :: head('teilr')}"></head>
-<body>
+<body th:data-user-id="${currentUser != null ? currentUser.id : ''}">
 
 <!-- Shown on non-smartphone widths -->
 <div th:replace="~{fragments/auth-frame :: desktop-block}"></div>

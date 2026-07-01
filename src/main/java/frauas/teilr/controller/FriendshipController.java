@@ -26,6 +26,7 @@ public class FriendshipController {
     private final FriendshipService friendshipService;
     private final UserService userService;
 
+
     /**
      * HTMX: list accepted friends for a user.
      * Used by group-creation screen to show the tick-list.
@@ -77,7 +78,9 @@ public class FriendshipController {
         Long requesterId = (Long) session.getAttribute("userId");
         if (requesterId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        return ResponseEntity.ok(friendshipService.sendRequest(requesterId, targetId));
+        Friendship friendship = friendshipService.sendRequest(requesterId, targetId);
+
+        return ResponseEntity.ok(friendship);
     }
 
     /**
@@ -90,6 +93,8 @@ public class FriendshipController {
         Long userId = (Long) session.getAttribute("userId");
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        return ResponseEntity.ok(friendshipService.acceptRequest(friendshipId, userId));
+        Friendship friendship = friendshipService.acceptRequest(friendshipId, userId);
+        
+        return ResponseEntity.ok(friendship);
     }
 }

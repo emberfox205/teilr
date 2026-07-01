@@ -157,7 +157,13 @@ public class ExpenseController {
         Long userId = (Long) session.getAttribute("userId");
         if (userId == null) return "redirect:/auth/login";
 
-        expenseService.confirmSettlement(groupId, debtorId, creditorId, amount, userId);
+        try {
+            expenseService.confirmSettlement(groupId, debtorId, creditorId, amount, userId);
+        } catch (IllegalStateException e) {
+            // This happens when 2 people click settle at the exact same time due to polling race conditions.
+            // We just ignore the duplicate request and safely return the latest valid state below.
+        }
+
         model.addAllAttributes(groupViewService.build(groupId, userId));
         return GROUP_DETAIL;
     }

@@ -20,7 +20,7 @@
         <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-3">Your groups</h2>
         <div id="group-list" class="flex flex-col gap-3"
              hx-get="/api/groups"
-             hx-trigger="load, refreshGroups from:body"
+             hx-trigger="load, every 5s, refreshGroups from:body"
              hx-target="this" hx-swap="innerHTML">
             <span class="loading loading-spinner loading-sm"></span>
         </div>
@@ -36,7 +36,7 @@
                 <input class="input w-full" type="number" min="0" max="9999" name="userId"
                        placeholder="0000"
                        hx-get="/api/users/search"
-                       hx-trigger="input changed delay:350ms"
+                       hx-trigger="input changed delay:350ms, refreshFriends from:body [this.value.length >= 1], every 5s [this.value.length >= 1]"
                        hx-target="#friend-search-result"
                        hx-vals='{"context":"friend"}'
                        hx-include="this">
@@ -46,12 +46,12 @@
 
         <div id="pending-requests"
              hx-get="/api/friends/pending"
-             hx-trigger="load, refreshFriends from:body"
+             hx-trigger="load, every 5s, refreshFriends from:body"
              hx-target="this" hx-swap="innerHTML"></div>
 
         <div id="friend-list"
              hx-get="/api/friends"
-             hx-trigger="load, refreshFriends from:body"
+             hx-trigger="load, every 5s, refreshFriends from:body"
              hx-target="this" hx-swap="innerHTML"></div>
     </section>
 

@@ -107,7 +107,6 @@ public class ExpenseService {
         // A group of 10 people = 10 sequential DB round-trips per bill. saveAll()
         // batches them into one
         expenseSplitRepository.saveAll(toSave);
-
         return savedBill;
     }
 
@@ -172,7 +171,7 @@ public class ExpenseService {
             toSave.add(s);
         }
         expenseSplitRepository.saveAll(toSave);
-
+        
         return savedBill;
     }
 
@@ -196,6 +195,24 @@ public class ExpenseService {
             throw new SecurityException("Only the debtor or creditor can confirm this settlement");
         }
 
+        // --- VALIDATION: RACE CONDITION PREVENTION ---
+        // Ensure the debtor actually owes the creditor at least the requested amount.
+        List<SimplifiedDebtDTO> currentDebts = getSimplifiedDebts(groupId);
+        boolean isValidDebt = false;
+        for (SimplifiedDebtDTO d : currentDebts) {
+            if (d.getDebtorId().equals(debtorId) && d.getCreditorId().equals(creditorId)) {
+                // To prevent double-settlement race conditions, ensure the debt covers the settled amount
+                if (d.getAmount().compareTo(amount) >= 0) {
+                    isValidDebt = true;
+                    break;
+                }
+            }
+        }
+
+        if (!isValidDebt) {
+            throw new IllegalStateException("This debt has already been settled or the amount is invalid due to recent changes.");
+        }
+
         applyBalance(debtorId, creditorId, groupId, amount);
 
         Settlement settlement = new Settlement();
@@ -205,7 +222,8 @@ public class ExpenseService {
         settlement.setAmount(amount);
         settlement.setConfirmedById(byUserId);
         settlement.setStatus("CONFIRMED");
-        return settlementRepository.save(settlement);
+        settlement = settlementRepository.save(settlement);
+        return settlement;
     }
 
     /**
@@ -230,7 +248,8 @@ public class ExpenseService {
                 settlement.getGroupId(), settlement.getAmount());
 
         settlement.setStatus("REVERTED");
-        return settlementRepository.save(settlement);
+        settlement = settlementRepository.save(settlement);
+        return settlement;
     }
 
     /** Newest-first settlement trail for a group. */
