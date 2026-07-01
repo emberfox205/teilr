@@ -80,4 +80,17 @@ public class FriendshipService {
                 || friendshipRepository.findByUserIdAAndUserIdB(b, a)
                         .filter(f -> "ACCEPTED".equals(f.getStatus())).isPresent();
     }
+
+    /**
+     * Returns the friendship status between two users: "NONE", "PENDING", "ACCEPTED", or "SELF".
+     */
+    public String getFriendshipStatus(Long a, Long b) {
+        if (a == null || b == null) return "NONE";
+        if (a.equals(b)) return "SELF";
+        return friendshipRepository.findByUserIdAAndUserIdB(a, b)
+                .map(Friendship::getStatus)
+                .orElseGet(() -> friendshipRepository.findByUserIdAAndUserIdB(b, a)
+                        .map(Friendship::getStatus)
+                        .orElse("NONE"));
+    }
 }
