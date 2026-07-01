@@ -11,10 +11,12 @@ flowchart TB
     classDef planned fill:#f0f0f0,stroke:#aaaaaa,color:#888,stroke-dasharray: 5 5
 
     subgraph CONTROLLER ["🌐 Controller Layer"]
+        AC["AuthController ✅"]:::coded
         GC["GroupController ✅"]:::coded
         UC["UserController ✅"]:::coded
         EC["ExpenseController ✅"]:::coded
         FC["FriendshipController ✅"]:::coded
+        VC["ViewController ✅"]:::coded
     end
 
     subgraph SERVICE ["⚙️ Service Layer"]
@@ -22,6 +24,8 @@ flowchart TB
         US["UserService ✅"]:::coded
         ES["ExpenseService ✅"]:::coded
         FS["FriendshipService ✅"]:::coded
+        MS["MailService ✅"]:::coded
+        GVS["GroupViewService ✅"]:::coded
     end
 
     subgraph REPO ["🗄️ Repository Layer"]
@@ -31,6 +35,7 @@ flowchart TB
         BR["BillRepository ✅"]:::coded
         ER["ExpenseSplitRepository ✅"]:::coded
         FR["FriendshipRepository ✅"]:::coded
+        SR["SettlementRepository ✅"]:::coded
     end
 
     subgraph ENTITY ["📦 Entity Layer"]
@@ -40,19 +45,40 @@ flowchart TB
         B["Bill ✅"]:::coded
         EX["ExpenseSplit ✅"]:::coded
         F["Friendship ✅"]:::coded
+        S["Settlement ✅"]:::coded
     end
 
+    AC --> US
+    AC --> MS
     GC --> GS
+    GC --> GVS
     UC --> US
     EC --> ES
+    EC --> GS
+    EC --> GVS
     FC --> FS
+    FC --> US
+    
+    GVS --> GS
+    GVS --> ES
+    GVS --> GMR
+    GVS --> FS
 
     GS --> GR
     GS --> GMR
     GS --> UR
+    GS --> BR
+    GS --> ER
+    GS --> SR
+    GS --> FS
+    
     US --> UR
+    
     ES --> BR
     ES --> ER
+    ES --> GMR
+    ES --> SR
+    
     FS --> FR
     FS --> UR
 
@@ -62,6 +88,7 @@ flowchart TB
     BR -.->|returns| B
     ER -.->|returns| EX
     FR -.->|returns| F
+    SR -.->|returns| S
 ```
 
 ---
@@ -77,6 +104,8 @@ classDiagram
         - String username
         - String email
         - String passwordHash
+        - String verificationToken
+        - boolean enabled
     }
 
     class Group {
@@ -98,9 +127,9 @@ classDiagram
         - String description
         - BigDecimal totalAmount
         - String currency
+        - Instant createdAt
         - String participantNames
         - String status
-        - Instant createdAt
     }
 
     class ExpenseSplit {
@@ -113,18 +142,31 @@ classDiagram
     }
 
     class Friendship {
-        <<planned>>
+        - Long id
         - Long userIdA
         - Long userIdB
         - String status
+    }
+    
+    class Settlement {
+        - Long id
+        - Long groupId
+        - Long debtorId
+        - Long creditorId
+        - BigDecimal amount
+        - String status
+        - Long confirmedById
+        - Instant createdAt
     }
 
     User "1" --o "n" GroupMember : joins via
     Group "1" --o "n" GroupMember : has
     Group "1" --> "0..*" Bill : contains
     Group "1" --> "0..*" ExpenseSplit : tracked via
+    Group "1" --> "0..*" Settlement : has
     User "1" --> "0..*" ExpenseSplit : has per group
     User "1" --> "0..*" Friendship : has
+    User "1" --> "0..*" Settlement : involved in
 ```
 
 ---
@@ -141,15 +183,24 @@ classDiagram
         + findById(id Long) Optional~User~
         + save(user User) User
     }
+    
+    class MailService {
+        <<Service>>
+        + sendVerificationEmail(toEmail String, username String, token String) void
+    }
 
     class GroupService {
         <<Service>>
         - GroupRepository groupRepository
         - GroupMemberRepository groupMemberRepository
         - UserRepository userRepository
+        - BillRepository billRepository
+        - ExpenseSplitRepository expenseSplitRepository
+        - SettlementRepository settlementRepository
+        - FriendshipService friendshipService
         + createGroup(name, adminId, memIds) Group
         + findGroupById(groupId) Optional~Group~
-        + addMember(groupId, userId) void
+        + addMember(groupId, userId, requesterId) void
         + removeMember(groupId, userId) void
         + getGroupsForUser(userId) List~Group~
         + getMembersOfGroup(groupId) List~User~
@@ -160,10 +211,22 @@ classDiagram
         <<Service>>
         - BillRepository billRepository
         - ExpenseSplitRepository expenseSplitRepository
+        - GroupMemberRepository groupMemberRepository
+        - SettlementRepository settlementRepository
         + createEqualBill(request BillCreateRequest) Bill
-        + createEqualBill(groupId, creatorId, desc, amount, participantIds, participantNames) Bill
+        + revertSettlement(settlementId Long, byUserId Long) Settlement
+        + getActivity(groupId Long) List~Settlement~
         + getSimplifiedDebts(groupId) List~SimplifiedDebtDTO~
         + getBillsForGroup(groupId) List~Bill~
+    }
+    
+    class GroupViewService {
+        <<Service>>
+        - GroupService groupService
+        - ExpenseService expenseService
+        - GroupMemberRepository groupMemberRepository
+        - FriendshipService friendshipService
+        + build(groupId Long, requesterId Long) Map~String, Object~
     }
 
     class UserRepository {
@@ -204,6 +267,12 @@ classDiagram
         + findByGroupId(groupId Long) List~ExpenseSplit~
         + save(split ExpenseSplit) ExpenseSplit
     }
+    
+    class SettlementRepository {
+        <<Repository>>
+        + findByGroupId(groupId Long) List~Settlement~
+        + save(settlement Settlement) Settlement
+    }
 
     class FriendshipService {
         <<Service>>
@@ -226,10 +295,20 @@ classDiagram
     GroupService --> GroupRepository
     GroupService --> GroupMemberRepository
     GroupService --> UserRepository
+    GroupService --> BillRepository
+    GroupService --> ExpenseSplitRepository
+    GroupService --> SettlementRepository
+    GroupService --> FriendshipService
     ExpenseService --> BillRepository
     ExpenseService --> ExpenseSplitRepository
+    ExpenseService --> GroupMemberRepository
+    ExpenseService --> SettlementRepository
     FriendshipService --> FriendshipRepository
     FriendshipService --> UserRepository
+    GroupViewService --> GroupService
+    GroupViewService --> ExpenseService
+    GroupViewService --> GroupMemberRepository
+    GroupViewService --> FriendshipService
 ```
 
 ---
@@ -239,6 +318,15 @@ classDiagram
 ```mermaid
 classDiagram
     direction LR
+    
+    class AuthController {
+        <<Controller - Thymeleaf>>
+        - UserService userService
+        - MailService mailService
+        + GET /auth/register
+        + POST /auth/register
+        + GET /auth/verify
+    }
 
     class UserController {
         <<Controller - Thymeleaf/HTMX>>
@@ -249,16 +337,20 @@ classDiagram
     class GroupController {
         <<Controller - Thymeleaf/HTMX>>
         - GroupService groupService
+        - GroupViewService groupViewService
         + GET /groups/new
         + POST /groups
         + GET /groups
         + POST /groups/groupId/members userId
         + DELETE /groups/groupId
+        + GET /groups/groupId
     }
 
     class ExpenseController {
         <<RestController - JSON API>>
         - ExpenseService expenseService
+        - GroupService groupService
+        - GroupViewService groupViewService
         + GET /api/expenses/group/groupId/bills
         + GET /api/expenses/group/groupId/simplified-debts
         + POST /api/expenses/bill
@@ -268,16 +360,29 @@ classDiagram
     class FriendshipController {
         <<Controller - HTMX/REST>>
         - FriendshipService friendshipService
+        - UserService userService
         + GET /api/friends
         + GET /api/friends/pending
         + POST /api/friends/request targetId
         + POST /api/friends/accept friendshipId
     }
 
+    class ViewController {
+        <<Controller - Thymeleaf>>
+        + GET /
+        + GET /dashboard
+    }
+
+    AuthController --> UserService
+    AuthController --> MailService
     UserController --> UserService
     GroupController --> GroupService
+    GroupController --> GroupViewService
     ExpenseController --> ExpenseService
+    ExpenseController --> GroupService
+    ExpenseController --> GroupViewService
     FriendshipController --> FriendshipService
+    FriendshipController --> UserService
 ```
 
 ---
@@ -287,6 +392,12 @@ classDiagram
 ```mermaid
 classDiagram
     direction LR
+    
+    class RegisterRequest {
+        - String email
+        - String username
+        - String password
+    }
 
     class BillCreateRequest {
         - Long groupId
@@ -295,6 +406,15 @@ classDiagram
         - BigDecimal totalAmount
         - List~Long~ participantIds
         - String participantNames
+    }
+    
+    class DetailedBillRequest {
+        - Long groupId
+        - String description
+        - BigDecimal totalAmount
+        - List~SplitLine~ splits
+        - Long userId
+        - BigDecimal amountOwed
     }
 
     class SettleUpRequest {
@@ -316,7 +436,9 @@ classDiagram
         - BigDecimal balance
     }
 
+    AuthController ..> RegisterRequest : receives
     ExpenseController ..> BillCreateRequest : receives
+    ExpenseController ..> DetailedBillRequest : receives
     ExpenseController ..> SettleUpRequest : receives
     ExpenseController ..> SimplifiedDebtDTO : returns
 ```

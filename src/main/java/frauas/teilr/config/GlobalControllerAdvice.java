@@ -52,6 +52,10 @@ public class GlobalControllerAdvice {
 
         if (user != null) {
             model.addAttribute("currentUser", user);
+        } else {
+            SecurityContextHolder.clearContext();
+            session.invalidate();
+            throw new org.springframework.security.access.AccessDeniedException("User no longer exists");
         }
     }
 }

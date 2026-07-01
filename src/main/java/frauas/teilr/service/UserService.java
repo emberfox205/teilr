@@ -81,7 +81,10 @@ public class UserService implements UserDetailsService {
         }
         return userRepository.findByVerificationToken(token).map(user -> {
             user.setEnabled(true);
-            user.setVerificationToken(null);
+            // We intentionally do NOT set the token to null here.
+            // Email prefetchers will "consume" the link before the user clicks it.
+            // By keeping the token in the DB, when the user physically clicks the link a second later,
+            // they still get a friendly "Success" message instead of a confusing "Invalid link" error!
             return userRepository.save(user);
         });
     }

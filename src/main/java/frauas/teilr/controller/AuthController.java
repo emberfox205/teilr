@@ -30,10 +30,12 @@ public class AuthController {
     public String loginPage(@RequestParam(required = false) String error,
                             @RequestParam(required = false) String logout,
                             @RequestParam(required = false) String registered,
+                            @RequestParam(required = false) String verified,
                             Model model) {
         if (error != null)      model.addAttribute("errorMessage", "Wrong username or password — or your email isn't verified yet.");
         if (logout != null)     model.addAttribute("infoMessage", "You've been logged out.");
         if (registered != null) model.addAttribute("infoMessage", "Check your inbox to confirm your account, then sign in.");
+        if (verified != null)   model.addAttribute("infoMessage", "Your email has been verified! You can now sign in.");
         return "login";
     }
 
@@ -58,6 +60,7 @@ public class AuthController {
             mailService.sendVerificationEmail(created.getEmail(), created.getUsername(), created.getVerificationToken());
             model.addAttribute("email", created.getEmail());
             model.addAttribute("userId", String.format("%04d", created.getId()));
+            model.addAttribute("rawUserId", created.getId());
             return "verify-pending";
         } catch (IllegalArgumentException e) {
             model.addAttribute("errorMessage", e.getMessage());
@@ -72,8 +75,18 @@ public class AuthController {
             model.addAttribute("errorMessage", "This verification link is invalid or has already been used.");
             return "verify-result";
         }
+        
         model.addAttribute("username", verified.get().getUsername());
         model.addAttribute("userId", String.format("%04d", verified.get().getId()));
         return "verify-result";
+    }
+
+    @GetMapping("/status")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public org.springframework.http.ResponseEntity<String> checkStatus(@RequestParam Long id) {
+        return userService.findById(id)
+            .filter(User::isEnabled)
+            .map(u -> org.springframework.http.ResponseEntity.ok("VERIFIED"))
+            .orElse(org.springframework.http.ResponseEntity.ok("PENDING"));
     }
 }
