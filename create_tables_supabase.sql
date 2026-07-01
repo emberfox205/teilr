@@ -1,10 +1,10 @@
 SET TIME ZONE 'UTC';
 
 CREATE TABLE public.users (
-    id              BIGINT       PRIMARY KEY,
-    username        VARCHAR(100) UNIQUE NOT NULL,
-    email           VARCHAR(100) UNIQUE NOT NULL,
-    password_hash   VARCHAR(255) NOT NULL,
+    id                  BIGINT       PRIMARY KEY,
+    username            VARCHAR(100) UNIQUE NOT NULL,
+    email               VARCHAR(100) UNIQUE NOT NULL,
+    password_hash       VARCHAR(255) NOT NULL,
     verification_token   VARCHAR(255),
     enabled              BOOLEAN NOT NULL DEFAULT FALSE,
 
