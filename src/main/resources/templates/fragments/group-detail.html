@@ -8,7 +8,10 @@
   addableFriends, currentUser. All mutating actions return this same fragment,
   swapped into #app-scene.
 -->
-<div th:fragment="sceneContent" th:with="me=${currentUser != null ? currentUser.id : null}">
+<div th:fragment="sceneContent" id="group-detail" th:data-group-id="${group.id}" th:with="me=${currentUser != null ? currentUser.id : null}"
+     th:hx-get="@{'/api/groups/' + ${group.id} + '/view'}"
+     hx-trigger="every 4s [!document.getElementById('bill_sheet').open]"
+     hx-target="#app-scene" hx-swap="innerHTML">
 
     <!-- Header -->
     <div class="flex items-center gap-2 mb-3">

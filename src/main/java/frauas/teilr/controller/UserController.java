@@ -1,8 +1,9 @@
 package frauas.teilr.controller;
 
 import frauas.teilr.entity.User;
+import frauas.teilr.service.FriendshipService;
 import frauas.teilr.service.UserService;
-
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Controller;
@@ -20,6 +21,7 @@ import java.util.Optional;
 @RequiredArgsConstructor // Lombok: generates a construtor that auto-injects userService
 public class UserController {
     private final UserService userService;
+    private final FriendshipService friendshipService;
 
     /**
      * HTMX: search for a user by @username.
@@ -31,6 +33,7 @@ public class UserController {
     // Full URL = /users (class) + /search (method) = GET /users/search
     public String searchUser(@RequestParam Long userId,
                              @RequestParam(defaultValue = "friend") String context,
+                             HttpSession session,
                              Model model) {
         Optional<User> result = userService.findById(userId);
         model.addAttribute("user", result.orElse(null));
@@ -38,8 +41,15 @@ public class UserController {
         // ← In the HTML: th:text="${user.username}" reads this
         // ← If not found → puts null (the template handles this case)
         model.addAttribute("notFound", result.isEmpty());
-        // ← Puts true/false into the model with the key "notFound"
-        // ← In the HTML: th:if="${notFound}" shows a "User not found" message
+        
+        Long currentUserId = (Long) session.getAttribute("userId");
+        if (currentUserId != null && result.isPresent()) {
+            String status = friendshipService.getFriendshipStatus(currentUserId, result.get().getId());
+            model.addAttribute("friendshipStatus", status);
+        } else {
+            model.addAttribute("friendshipStatus", "NONE");
+        }
+        
         // context drives which action button the result shows: "friend" | "newGroup"
         model.addAttribute("context", context);
         return "fragments/user-search-result :: searchResultContent";

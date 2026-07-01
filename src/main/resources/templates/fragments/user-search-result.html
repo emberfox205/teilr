@@ -26,13 +26,19 @@
         <span th:if="${currentUser != null and user.id == currentUser.id}"
               class="text-xs text-base-content/50">This is you</span>
 
-        <!-- friend request -->
-        <button th:if="${context == 'friend' and (currentUser == null or user.id != currentUser.id)}"
+        <!-- friend request button -->
+        <button th:if="${context == 'friend' and friendshipStatus == 'NONE'}"
                 type="button" class="btn btn-sm btn-primary"
                 th:hx-post="@{'/api/friends/request?targetId=' + ${user.id}}"
                 hx-swap="none"
-                hx-on:htmx:after-request="this.disabled=true; this.textContent = event.detail.successful ? 'Request sent' : 'Already linked'; if(event.detail.successful){htmx.trigger(document.body,'refreshFriends');}">
+                hx-on:htmx:after-request="this.disabled=true; this.textContent = event.detail.successful ? 'Request sent' : 'Already linked'; if(event.detail.successful){ htmx.trigger(document.body,'refreshFriends'); }">
             <iconify-icon icon="carbon:user-follow" width="16"></iconify-icon> Add friend
+        </button>
+
+        <!-- pending request banner -->
+        <button th:if="${context == 'friend' and friendshipStatus == 'PENDING'}"
+                type="button" class="btn btn-sm btn-disabled" disabled>
+            Request sent
         </button>
 
         <!-- add to new group -->

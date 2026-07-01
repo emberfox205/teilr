@@ -112,7 +112,8 @@ public class GroupService {
             throw new SecurityException("Only the group admin can delete this group.");
         }
         
-        // Clean up orphaned data related to this group
+        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
+
         settlementRepository.deleteByGroupId(groupId);
         expenseSplitRepository.deleteByGroupId(groupId);
         billRepository.deleteByGroupId(groupId);
