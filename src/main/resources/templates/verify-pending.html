@@ -13,20 +13,20 @@
             <iconify-icon icon="carbon:money" width="20" class="text-primary"></iconify-icon>
             <span>teilr</span>
         </div>
-        <span class="badge badge-soft">Pending</span>
+        <span id="status-badge" class="badge badge-soft">Pending</span>
     </header>
 
     <section>
         <p class="text-base-content/60 mb-1">Your 4-digit ID</p>
         <p class="text-6xl font-bold text-primary mb-6">#<span th:text="${userId}">0000</span></p>
-        <h1 class="text-2xl font-semibold mb-2">Confirm your email</h1>
-        <p class="text-base-content/70">
+        <h1 id="status-title" class="text-2xl font-semibold mb-2">Confirm your email</h1>
+        <p id="status-desc" class="text-base-content/70">
             We sent a link to <span class="font-medium text-base-content" th:text="${email}">you@email.com</span>.
             Open it to activate your account, then sign in.
         </p>
     </section>
 
-    <div role="alert" class="alert alert-info alert-soft">
+    <div role="alert" class="alert alert-info alert-soft" id="status-alert">
         <iconify-icon icon="carbon:information" width="20"></iconify-icon>
         <span>Can't find it? Check spam. In development the link is also printed to the server log.</span>
     </div>
@@ -42,14 +42,23 @@
 <script th:inline="javascript">
     const rawUserId = /*[[${rawUserId}]]*/ null;
     if (rawUserId) {
-        // Fallback polling for when the email prefetcher consumes the link
-        // before the websocket connection is fully established.
-        setInterval(function() {
+        let pollInterval = setInterval(function() {
             fetch('/auth/status?id=' + rawUserId)
                 .then(r => r.text())
                 .then(text => {
                     if (text === 'VERIFIED') {
-                        window.location.href = '/auth/login?verified=true';
+                        clearInterval(pollInterval); // Stop polling
+
+                        // Update the UI so the user sees it is verified
+                        document.getElementById('status-badge').outerHTML = '<span class="badge badge-success badge-soft gap-1"><iconify-icon icon="carbon:checkmark" width="14"></iconify-icon> Verified</span>';
+                        document.getElementById('status-title').innerText = 'Account confirmed!';
+                        document.getElementById('status-desc').innerText = 'Redirecting to login...';
+                        document.getElementById('status-alert').style.display = 'none';
+
+                        // Wait 2.5 seconds, then redirect
+                        setTimeout(() => {
+                            window.location.href = '/auth/login?verified=true';
+                        }, 2000);
                     }
                 });
         }, 2000);
