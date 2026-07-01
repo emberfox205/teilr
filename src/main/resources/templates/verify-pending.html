@@ -39,5 +39,21 @@
     </footer>
 </main>
 
+<script th:inline="javascript">
+    const rawUserId = /*[[${rawUserId}]]*/ null;
+    if (rawUserId) {
+        // Fallback polling for when the email prefetcher consumes the link
+        // before the websocket connection is fully established.
+        setInterval(function() {
+            fetch('/auth/status?id=' + rawUserId)
+                .then(r => r.text())
+                .then(text => {
+                    if (text === 'VERIFIED') {
+                        window.location.href = '/auth/login?verified=true';
+                    }
+                });
+        }, 2000);
+    }
+</script>
 </body>
 </html>

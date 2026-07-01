@@ -25,9 +25,4 @@ public class AppBroadcaster {
     public void broadcastFriendUpdate(Long userId) {
         messagingTemplate.convertAndSend("/topic/user/" + userId + "/friends", "update");
     }
-
-    // 4. Registration Verification Updates
-    public void broadcastEmailVerified(Long userId) {
-        messagingTemplate.convertAndSend("/topic/user/" + userId + "/verified", "update");
-    }
 }
